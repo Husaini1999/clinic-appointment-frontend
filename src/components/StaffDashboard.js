@@ -41,7 +41,7 @@ function StaffDashboard() {
 
 	const fetchAppointments = useCallback(async () => {
 		try {
-			const response = await fetch('${config.apiUrl}/api/appointments', {
+			const response = await fetch(`${config.apiUrl}/api/appointments`, {
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem('token')}`,
 				},

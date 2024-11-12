@@ -80,7 +80,7 @@ function Signup() {
 		}
 
 		try {
-			const response = await fetch('${config.apiUrl}/api/auth/signup', {
+			const response = await fetch(`${config.apiUrl}/api/auth/signup`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

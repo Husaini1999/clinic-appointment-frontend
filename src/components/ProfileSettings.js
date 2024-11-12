@@ -71,7 +71,7 @@ function ProfileSettings() {
 
 	const fetchUserData = async () => {
 		try {
-			const response = await fetch('${config.apiUrl}/api/auth/user-details', {
+			const response = await fetch(`${config.apiUrl}/api/auth/user-details`, {
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem('token')}`,
 				},
@@ -182,7 +182,7 @@ function ProfileSettings() {
 
 		try {
 			const response = await fetch(
-				'${config.apiUrl}/api/auth/change-password',
+				`${config.apiUrl}/api/auth/change-password`,
 				{
 					method: 'PUT',
 					headers: {
