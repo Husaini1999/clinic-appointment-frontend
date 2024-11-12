@@ -24,6 +24,7 @@ import {
 	Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { isValidPhoneNumber } from 'libphonenumber-js';
+import config from '../config';
 
 function ProfileSettings() {
 	const [userData, setUserData] = useState({
@@ -70,7 +71,7 @@ function ProfileSettings() {
 
 	const fetchUserData = async () => {
 		try {
-			const response = await fetch('/api/auth/user-details', {
+			const response = await fetch('${config.apiUrl}/api/auth/user-details', {
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem('token')}`,
 				},
@@ -106,7 +107,7 @@ function ProfileSettings() {
 		setLoading(true);
 
 		try {
-			const response = await fetch('/api/auth/update-user', {
+			const response = await fetch(`${config.apiUrl}/api/auth/update-user`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -180,17 +181,20 @@ function ProfileSettings() {
 		setLoading(true);
 
 		try {
-			const response = await fetch('/api/auth/change-password', {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${localStorage.getItem('token')}`,
-				},
-				body: JSON.stringify({
-					currentPassword: passwordData.currentPassword,
-					newPassword: passwordData.newPassword,
-				}),
-			});
+			const response = await fetch(
+				'${config.apiUrl}/api/auth/change-password',
+				{
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${localStorage.getItem('token')}`,
+					},
+					body: JSON.stringify({
+						currentPassword: passwordData.currentPassword,
+						newPassword: passwordData.newPassword,
+					}),
+				}
+			);
 
 			const data = await response.json();
 

@@ -27,6 +27,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { addDays, set, format, isBefore, startOfDay } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
+import config from '../config';
 
 function BookingModal({ open, onClose }) {
 	const theme = useTheme();
@@ -50,11 +51,14 @@ function BookingModal({ open, onClose }) {
 		const fetchUserDetails = async () => {
 			if (open && localStorage.getItem('token')) {
 				try {
-					const response = await fetch('/api/auth/user-details', {
-						headers: {
-							Authorization: `Bearer ${localStorage.getItem('token')}`,
-						},
-					});
+					const response = await fetch(
+						`${config.apiUrl}/api/auth/user-details`,
+						{
+							headers: {
+								Authorization: `Bearer ${localStorage.getItem('token')}`,
+							},
+						}
+					);
 
 					if (response.ok) {
 						const userData = await response.json();
@@ -163,14 +167,17 @@ function BookingModal({ open, onClose }) {
 			// First, update the user's phone number if they're logged in
 			const token = localStorage.getItem('token');
 			if (token) {
-				const updateResponse = await fetch('/api/auth/update-user', {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ phone: cleanPhone }),
-				});
+				const updateResponse = await fetch(
+					`${config.apiUrl}/api/auth/update-user`,
+					{
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({ phone: cleanPhone }),
+					}
+				);
 
 				if (!updateResponse.ok) {
 					throw new Error('Failed to update user details');
@@ -178,7 +185,7 @@ function BookingModal({ open, onClose }) {
 			}
 
 			// Then create the appointment with cleaned phone number
-			const response = await fetch('/api/appointments/create', {
+			const response = await fetch(`${config.apiUrl}/api/appointments/create`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

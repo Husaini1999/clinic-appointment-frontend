@@ -16,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import config from '../config';
 
 function Login() {
 	const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ function Login() {
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-			const response = await fetch('/api/auth/login', {
+			const response = await fetch(`${config.apiUrl}/api/auth/login`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

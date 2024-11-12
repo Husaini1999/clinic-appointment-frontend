@@ -15,6 +15,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PersonIcon from '@mui/icons-material/Person';
+import config from '../config';
 
 const Chatbot = () => {
 	const [open, setOpen] = useState(false);
@@ -66,7 +67,7 @@ const Chatbot = () => {
 
 	const getAIResponse = async (input) => {
 		try {
-			const response = await fetch('/api/openai/chat', {
+			const response = await fetch(`${config.apiUrl}/api/openai/chat`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -84,7 +85,7 @@ const Chatbot = () => {
 			}
 
 			const data = await response.json();
-			return data; // This will be the AI response
+			return data;
 		} catch (error) {
 			console.error('Error fetching AI response:', error);
 			return 'I am sorry, I could not process your request at this time.';

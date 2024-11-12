@@ -137,9 +137,9 @@ function Dashboard() {
 
 		if (user.role === 'patient') {
 			try {
-				const endpoint = `/api/appointments/patient?email=${encodeURIComponent(
-					user.email
-				)}`;
+				const endpoint = `${
+					config.apiUrl
+				}/api/appointments/patient?email=${encodeURIComponent(user.email)}`;
 				const response = await fetch(endpoint, {
 					headers: {
 						Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -199,7 +199,7 @@ function Dashboard() {
 			console.log('Sending request with token:', token); // Debug log
 
 			const response = await fetch(
-				`/api/appointments/${appointmentId}/status`,
+				`${config.apiUrl}/api/appointments/${appointmentId}/status`,
 				{
 					method: 'PUT',
 					headers: {

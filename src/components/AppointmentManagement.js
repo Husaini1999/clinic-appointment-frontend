@@ -41,6 +41,7 @@ import { canCancelAppointments } from '../utils/roleUtils';
 import { enhancedTableStyles } from './styles/tableStyles';
 import NotesHistory from './NotesHistory';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
+import config from '../config';
 
 // Separate Approve Modal Component
 const ApproveModal = React.memo(
@@ -250,7 +251,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	const handleStatusUpdate = async (appointmentId, newStatus) => {
 		try {
 			const response = await fetch(
-				`/api/appointments/${appointmentId}/status`,
+				`${config.apiUrl}/api/appointments/${appointmentId}/status`,
 				{
 					method: 'PUT',
 					headers: {

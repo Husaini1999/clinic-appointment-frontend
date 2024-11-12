@@ -25,6 +25,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import { enhancedTableStyles } from './styles/tableStyles';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
+import config from '../config';
 
 const mergedTableStyles = {
 	...enhancedTableStyles.root,
@@ -112,7 +113,7 @@ function UserManagement() {
 
 	const fetchUsers = async () => {
 		try {
-			const response = await fetch('/api/users', {
+			const response = await fetch(`${config.apiUrl}/api/users`, {
 				headers: {
 					Authorization: `Bearer ${localStorage.getItem('token')}`,
 				},
@@ -128,14 +129,17 @@ function UserManagement() {
 
 	const handleRoleUpdate = async () => {
 		try {
-			const response = await fetch(`/api/users/${selectedUser?._id}/role`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${localStorage.getItem('token')}`,
-				},
-				body: JSON.stringify({ role: newRole }),
-			});
+			const response = await fetch(
+				`${config.apiUrl}/api/users/${selectedUser?._id}/role`,
+				{
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${localStorage.getItem('token')}`,
+					},
+					body: JSON.stringify({ role: newRole }),
+				}
+			);
 
 			if (response.ok) {
 				fetchUsers();
