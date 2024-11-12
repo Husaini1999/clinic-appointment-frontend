@@ -31,6 +31,7 @@ import { enhancedTableStyles } from './styles/tableStyles';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
+import config from '../config';
 
 const CancelModal = React.memo(
 	({ open, onClose, onCancel, appointmentId, notes, onNotesChange }) => (
