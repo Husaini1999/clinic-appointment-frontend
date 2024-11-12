@@ -32,18 +32,15 @@ function Navbar({ mobileOpen, onMobileClose }) {
 
 	const handleNavigation = (path) => {
 		if (path === '/') {
-			// If we're already on home page, scroll to top
 			if (location.pathname === '/') {
 				window.scrollTo({ top: 0, behavior: 'smooth' });
 			} else {
-				// Navigate to home page
 				navigate('/');
 			}
-			if (isMobile) onMobileClose();
+			onMobileClose();
 			return;
 		}
 
-		// Handle other navigation with hash
 		if (path.startsWith('/#')) {
 			const element = document.getElementById(path.substring(2));
 			if (element) {
@@ -55,21 +52,23 @@ function Navbar({ mobileOpen, onMobileClose }) {
 			navigate(path);
 		}
 
-		if (isMobile) onMobileClose();
+		onMobileClose();
 	};
 
 	const handleLogout = () => {
 		localStorage.removeItem('token');
 		localStorage.removeItem('user');
 		navigate('/');
+		onMobileClose();
 	};
 
 	const handleOpenBooking = () => {
-		setOpenBooking(true); // Open the booking modal
+		setOpenBooking(true);
+		onMobileClose();
 	};
 
 	const handleCloseBooking = () => {
-		setOpenBooking(false); // Close the booking modal
+		setOpenBooking(false);
 	};
 
 	// Define navigation items
@@ -87,10 +86,7 @@ function Navbar({ mobileOpen, onMobileClose }) {
 					<ListItem
 						button
 						key={item.label}
-						onClick={() => {
-							handleNavigation(item.path);
-							if (isMobile) onMobileClose();
-						}}
+						onClick={() => handleNavigation(item.path)}
 					>
 						<ListItemIcon>
 							{item.label === 'Home' && <HomeIcon />}
@@ -106,7 +102,6 @@ function Navbar({ mobileOpen, onMobileClose }) {
 			<Divider />
 
 			{user ? (
-				// Logged in user menu items
 				<List>
 					<ListItem button onClick={() => handleNavigation('/dashboard')}>
 						<ListItemIcon>
@@ -130,10 +125,7 @@ function Navbar({ mobileOpen, onMobileClose }) {
 					</ListItem>
 					<ListItem
 						button
-						onClick={() => {
-							handleLogout();
-							onMobileClose();
-						}}
+						onClick={handleLogout}
 						sx={{
 							color: 'secondary.main',
 							'&:hover': {
@@ -149,22 +141,8 @@ function Navbar({ mobileOpen, onMobileClose }) {
 					</ListItem>
 				</List>
 			) : (
-				// Public menu items
 				<List>
-					<ListItem
-						button
-						onClick={() => {
-							handleNavigation('/login');
-							onMobileClose();
-						}}
-						sx={{
-							color: 'secondary.main',
-							'&:hover': {
-								backgroundColor: 'secondary.light',
-								color: 'white',
-							},
-						}}
-					>
+					<ListItem button onClick={() => handleNavigation('/login')}>
 						<ListItemIcon>
 							<AccountCircleIcon sx={{ color: 'inherit' }} />
 						</ListItemIcon>
@@ -229,7 +207,6 @@ function Navbar({ mobileOpen, onMobileClose }) {
 			))}
 
 			{user ? (
-				// Logged in navigation
 				<>
 					<Box
 						sx={{
@@ -259,7 +236,7 @@ function Navbar({ mobileOpen, onMobileClose }) {
 						{user.role === 'patient' && (
 							<Button
 								color="primary"
-								onClick={handleOpenBooking} // Open the booking modal
+								onClick={handleOpenBooking}
 								sx={{
 									fontWeight: 500,
 									px: 1,
@@ -306,11 +283,9 @@ function Navbar({ mobileOpen, onMobileClose }) {
 					>
 						Logout
 					</Button>
-					<BookingModal open={openBooking} onClose={handleCloseBooking} />{' '}
-					{/* Render the modal */}
+					<BookingModal open={openBooking} onClose={handleCloseBooking} />
 				</>
 			) : (
-				// Public navigation
 				<>
 					<Button
 						color="secondary"
