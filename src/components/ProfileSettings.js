@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
 	Box,
 	Container,
@@ -6,7 +6,6 @@ import {
 	Typography,
 	TextField,
 	Button,
-	Divider,
 	Snackbar,
 	Alert,
 	Grid,
@@ -62,14 +61,7 @@ function ProfileSettings() {
 
 	const [phoneError, setPhoneError] = useState('');
 
-	useEffect(() => {
-		fetchUserData();
-	}, []);
-
-	// Reference to fetchUserData function
-	// Reference: frontend/src/components/ProfileSettings.js lines 68-87
-
-	const fetchUserData = async () => {
+	const fetchUserData = useCallback(async () => {
 		try {
 			const response = await fetch(`${config.apiUrl}/api/auth/user-details`, {
 				headers: {
@@ -88,10 +80,11 @@ function ProfileSettings() {
 		} catch (error) {
 			showMessage('Error fetching user data', 'error');
 		}
-	};
+	}, []);
 
-	// Reference to handleProfileUpdate function
-	// Reference: frontend/src/components/ProfileSettings.js lines 89-118
+	useEffect(() => {
+		fetchUserData();
+	}, [fetchUserData]);
 
 	const handleProfileUpdate = async (e) => {
 		e.preventDefault();
@@ -100,10 +93,11 @@ function ProfileSettings() {
 		const cleanPhone = userData.phone.replace(/\s+/g, '');
 
 		if (!cleanPhone || !isValidPhoneNumber(cleanPhone)) {
+			setPhoneError('Please enter a valid phone number');
 			showMessage('Please enter a valid phone number', 'error');
 			return;
 		}
-
+		setPhoneError('');
 		setLoading(true);
 
 		try {
@@ -236,9 +230,6 @@ function ProfileSettings() {
 		setSnackbarOpen(true);
 	};
 
-	// Reference to JSX return section
-	// Reference: frontend/src/components/ProfileSettings.js lines 220-478
-
 	return (
 		<Container maxWidth="md" sx={{ py: 4 }}>
 			<Typography variant="h4" gutterBottom>
@@ -294,9 +285,6 @@ function ProfileSettings() {
 					</Grid>
 				</form>
 			</Paper>
-
-			{/* Password Change Section */}
-			{/* Reference: frontend/src/components/ProfileSettings.js lines 272-463 */}
 
 			<Paper sx={{ p: 3 }}>
 				<Typography variant="h6" gutterBottom>

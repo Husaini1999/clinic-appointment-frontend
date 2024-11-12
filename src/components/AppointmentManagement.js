@@ -26,8 +26,6 @@ import {
 	TablePagination,
 	IconButton,
 	Tooltip,
-	useTheme,
-	useMediaQuery,
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BlockIcon from '@mui/icons-material/Block';
@@ -223,8 +221,6 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 	const user = JSON.parse(localStorage.getItem('user'));
 	const canCancel = canCancelAppointments(user.role);
-	const theme = useTheme();
-	const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
 	// Get unique treatments from appointments
 	const treatments = [
@@ -331,15 +327,15 @@ function AppointmentManagement({ appointments, onRefresh }) {
 		return a[property] - b[property];
 	};
 
-	// Modified sorting logic
-	const sortedAppointments = React.useMemo(() => {
-		if (!orderBy) return filteredAppointments; // Return unsorted if no orderBy
+	// // Modified sorting logic
+	// const sortedAppointments = React.useMemo(() => {
+	// 	if (!orderBy) return filteredAppointments; // Return unsorted if no orderBy
 
-		return [...filteredAppointments].sort((a, b) => {
-			const result = compareValues(a, b, orderBy);
-			return order === 'asc' ? result : -result;
-		});
-	}, [filteredAppointments, order, orderBy]);
+	// 	return [...filteredAppointments].sort((a, b) => {
+	// 		const result = compareValues(a, b, orderBy);
+	// 		return order === 'asc' ? result : -result;
+	// 	});
+	// }, [filteredAppointments, order, orderBy]);
 
 	// Table headers configuration
 	const headCells = [

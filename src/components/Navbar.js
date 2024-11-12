@@ -31,6 +31,19 @@ function Navbar({ mobileOpen, onMobileClose }) {
 	const [openBooking, setOpenBooking] = useState(false); // State to manage modal open/close
 
 	const handleNavigation = (path) => {
+		if (path === '/') {
+			// If we're already on home page, scroll to top
+			if (location.pathname === '/') {
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			} else {
+				// Navigate to home page
+				navigate('/');
+			}
+			if (isMobile) onMobileClose();
+			return;
+		}
+
+		// Handle other navigation with hash
 		if (path.startsWith('/#')) {
 			const element = document.getElementById(path.substring(2));
 			if (element) {
@@ -41,6 +54,8 @@ function Navbar({ mobileOpen, onMobileClose }) {
 		} else {
 			navigate(path);
 		}
+
+		if (isMobile) onMobileClose();
 	};
 
 	const handleLogout = () => {

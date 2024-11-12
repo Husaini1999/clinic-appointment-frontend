@@ -13,11 +13,22 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Navbar from './Navbar';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header = () => {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 	const [mobileOpen, setMobileOpen] = React.useState(false);
+	const navigate = useNavigate();
+	const location = useLocation();
+
+	const handleTitleClick = () => {
+		if (location.pathname === '/') {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		} else {
+			navigate('/');
+		}
+	};
 
 	function HideOnScroll({ children }) {
 		const trigger = useScrollTrigger();
@@ -68,6 +79,7 @@ const Header = () => {
 						<Typography
 							variant="h6"
 							component="div"
+							onClick={handleTitleClick}
 							sx={{
 								cursor: 'pointer',
 								color: 'primary.main',
@@ -77,6 +89,13 @@ const Header = () => {
 								position: { xs: 'absolute', md: 'static' },
 								left: '50%',
 								transform: { xs: 'translateX(-50%)', md: 'none' },
+								display: 'flex',
+								alignItems: 'center',
+								gap: 2,
+								'&:hover': {
+									opacity: 0.8,
+								},
+								transition: 'opacity 0.2s ease-in-out',
 							}}
 						>
 							Primer Cherang Clinic

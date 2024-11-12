@@ -17,13 +17,10 @@ import {
 	DialogTitle,
 	DialogContent,
 	DialogActions,
-	Pagination,
 	TablePagination,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 	IconButton,
+	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 import { format } from 'date-fns';
 import NotesHistory from './NotesHistory';
@@ -119,16 +116,17 @@ const CollapsibleNotesCell = ({ notes }) => {
 };
 
 function Dashboard() {
-	const [appointments, setAppointments] = useState([]);
 	const [patientAppointments, setPatientAppointments] = useState([]);
 	const [cancelModalOpen, setCancelModalOpen] = useState(false);
 	const [selectedAppointment, setSelectedAppointment] = useState(null);
 	const [cancelNotes, setCancelNotes] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
-	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 	const [upcomingPage, setUpcomingPage] = useState(0);
 	const [pastPage, setPastPage] = useState(0);
+
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
 	// Use useMemo to ensure user is stable
 	const user = useMemo(() => JSON.parse(localStorage.getItem('user')), []);
@@ -239,23 +237,13 @@ function Dashboard() {
 
 	const today = new Date();
 
-	const upcomingAppointments =
-		user.role === 'patient'
-			? patientAppointments.filter(
-					(appointment) => new Date(appointment.appointmentTime) >= today
-			  )
-			: appointments.filter(
-					(appointment) => new Date(appointment.appointmentTime) >= today
-			  );
+	const upcomingAppointments = patientAppointments.filter(
+		(appointment) => new Date(appointment.appointmentTime) >= today
+	);
 
-	const pastAppointments =
-		user.role === 'patient'
-			? patientAppointments.filter(
-					(appointment) => new Date(appointment.appointmentTime) < today
-			  )
-			: appointments.filter(
-					(appointment) => new Date(appointment.appointmentTime) < today
-			  );
+	const pastAppointments = patientAppointments.filter(
+		(appointment) => new Date(appointment.appointmentTime) < today
+	);
 
 	const statusOptions = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
 
@@ -498,7 +486,15 @@ function Dashboard() {
 							))
 						) : (
 							<TableRow>
-								<TableCell colSpan={tableHeaders.length} align="center">
+								<TableCell
+									colSpan={isMobile ? 5 : tableHeaders.length}
+									align="center"
+									sx={{
+										py: 4,
+										color: 'text.secondary',
+										fontSize: { xs: '0.875rem', sm: '1rem' },
+									}}
+								>
 									No upcoming appointments available for the selected status.
 								</TableCell>
 							</TableRow>
@@ -583,7 +579,15 @@ function Dashboard() {
 							))
 						) : (
 							<TableRow>
-								<TableCell colSpan={tableHeaders.length} align="center">
+								<TableCell
+									colSpan={isMobile ? 4 : tableHeaders.length}
+									align="center"
+									sx={{
+										py: 4,
+										color: 'text.secondary',
+										fontSize: { xs: '0.875rem', sm: '1rem' },
+									}}
+								>
 									No past appointments available for the selected status.
 								</TableCell>
 							</TableRow>

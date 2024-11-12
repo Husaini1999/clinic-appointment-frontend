@@ -45,7 +45,6 @@ function BookingModal({ open, onClose }) {
 	const [success, setSuccess] = useState('');
 	const [emailError, setEmailError] = useState('');
 	const [phoneError, setPhoneError] = useState('');
-	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -71,8 +70,6 @@ function BookingModal({ open, onClose }) {
 					}
 				} catch (error) {
 					console.error('Error fetching user details:', error);
-				} finally {
-					setLoading(false);
 				}
 			}
 		};
