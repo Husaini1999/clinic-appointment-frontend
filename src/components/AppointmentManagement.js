@@ -468,7 +468,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	return (
 		<Box sx={{ width: '100%', overflow: 'hidden' }}>
 			{/* Search and Filter Section */}
-			<Grid container spacing={2} sx={{ mb: 3 }}>
+			<Grid container spacing={2} sx={{ mt: 1, mb: 3 }}>
 				<Grid item xs={12} md={4}>
 					<TextField
 						fullWidth
