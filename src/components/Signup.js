@@ -16,6 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import config from '../config';
 
 function Signup() {
 	const [formData, setFormData] = useState({

@@ -17,6 +17,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import AppointmentManagement from './AppointmentManagement';
 import UserManagement from './UserManagement';
 import { canViewAnalytics } from '../utils/roleUtils';
+import config from '../config';
 
 function TabPanel({ children, value, index }) {
 	return (
