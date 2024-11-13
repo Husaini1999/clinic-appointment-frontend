@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
 	Box,
 	Container,
@@ -13,7 +13,7 @@ import {
 	IconButton,
 	CircularProgress,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import config from '../config';
@@ -29,6 +29,16 @@ function Login() {
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const [loading, setLoading] = useState(false); // Loading state
 	const navigate = useNavigate();
+	const location = useLocation();
+	const searchParams = new URLSearchParams(location.search);
+	const expired = searchParams.get('expired');
+
+	useEffect(() => {
+		if (expired) {
+			// Show message that session expired
+			showMessage('Your session has expired. Please log in again.', 'warning');
+		}
+	}, [expired]);
 
 	const handleChange = (e) => {
 		setFormData({
