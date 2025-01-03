@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
 	Container,
 	Typography,
@@ -8,6 +8,8 @@ import {
 	Paper,
 	Button,
 	IconButton,
+	TextField,
+	InputAdornment,
 } from '@mui/material';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -22,10 +24,18 @@ import VaccinesIcon from '@mui/icons-material/Vaccines';
 import BookingModal from './Booking';
 import Chatbot from './Chatbot';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import config from '../config';
+import { motion } from 'framer-motion';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
 
 function Homepage() {
 	const location = useLocation();
 	const [openBooking, setOpenBooking] = useState(false);
+	const [categories, setCategories] = useState([]);
+	const [searchTerm, setSearchTerm] = useState('');
+	const [visibleCategories, setVisibleCategories] = useState(6);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		if (location.state?.scrollTo) {
@@ -36,60 +46,31 @@ function Homepage() {
 		}
 	}, [location]);
 
-	const services = [
-		{
-			icon: (
-				<MedicalServicesIcon
-					sx={{ fontSize: 50, color: 'secondary.main', mb: 2 }}
-				/>
-			),
-			title: 'General Health Checkup',
-			description:
-				'Comprehensive health screening and preventive care services',
-		},
-		{
-			icon: (
-				<LocalHospitalIcon
-					sx={{ fontSize: 50, color: 'secondary.main', mb: 2 }}
-				/>
-			),
-			title: 'Dental Care',
-			description:
-				'Professional dental services including cleaning, filling, and orthodontics',
-		},
-		{
-			icon: (
-				<HealingIcon sx={{ fontSize: 50, color: 'secondary.main', mb: 2 }} />
-			),
-			title: 'Physiotherapy',
-			description:
-				'Rehabilitation services for injuries and chronic conditions',
-		},
-		{
-			icon: (
-				<ChildCareIcon sx={{ fontSize: 50, color: 'secondary.main', mb: 2 }} />
-			),
-			title: 'Pediatric Care',
-			description: 'Specialized healthcare services for children and infants',
-		},
-		{
-			icon: (
-				<ElderlyIcon sx={{ fontSize: 50, color: 'secondary.main', mb: 2 }} />
-			),
-			title: 'Geriatric Care',
-			description: 'Dedicated healthcare services for elderly patients',
-		},
-		{
-			icon: (
-				<VaccinesIcon sx={{ fontSize: 50, color: 'secondary.main', mb: 2 }} />
-			),
-			title: 'Vaccination',
-			description: 'Complete range of vaccines for all age groups',
-		},
-	];
+	useEffect(() => {
+		const fetchCategories = async () => {
+			try {
+				const response = await fetch(`${config.apiUrl}/api/categories`);
+				const data = await response.json();
+				setCategories(data);
+			} catch (error) {
+				console.error('Error fetching categories:', error);
+			}
+		};
+		fetchCategories();
+	}, []);
 
 	const handleBookingClick = () => {
 		setOpenBooking(true);
+	};
+
+	const filteredCategories = categories.filter(
+		(category) =>
+			category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			category.description?.toLowerCase().includes(searchTerm.toLowerCase())
+	);
+
+	const handleLoadMore = () => {
+		setVisibleCategories((prev) => prev + 6);
 	};
 
 	return (
@@ -312,7 +293,7 @@ function Homepage() {
 			<Box
 				id="services"
 				sx={{
-					py: 12,
+					py: 8,
 					bgcolor: 'background.default',
 					position: 'relative',
 				}}
@@ -323,61 +304,139 @@ function Homepage() {
 						component="h2"
 						gutterBottom
 						align="center"
-						color="primary"
 						sx={{ mb: 6 }}
 					>
 						Our Services
 					</Typography>
+
+					{/* Search Bar */}
+					<Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+						<TextField
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							placeholder="Search services..."
+							variant="outlined"
+							sx={{ width: { xs: '100%', sm: '400px' } }}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchIcon color="action" />
+									</InputAdornment>
+								),
+							}}
+						/>
+					</Box>
+
 					<Grid container spacing={4}>
-						{services.map((service, index) => (
-							<Grid item xs={12} md={4} key={index}>
-								<Paper
-									sx={{
-										p: 4,
-										height: '100%',
-										textAlign: 'center',
-										transition: 'all 0.3s ease-in-out',
-										'&:hover': {
-											transform: 'translateY(-10px)',
-											boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-											bgcolor: 'background.paper',
-										},
-										display: 'flex',
-										flexDirection: 'column',
-										alignItems: 'center',
-									}}
-								>
-									<Box
-										sx={{
-											bgcolor: 'primary.light',
-											borderRadius: '50%',
-											p: 2,
-											mb: 3,
-											display: 'flex',
-											alignItems: 'center',
-											justifyContent: 'center',
+						{filteredCategories
+							.slice(0, visibleCategories)
+							.map((category, index) => (
+								<Grid item xs={12} sm={6} md={4} key={category._id}>
+									<motion.div
+										initial={{ opacity: 0, y: 20 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{
+											duration: 0.5,
+											delay: index * 0.1, // Stagger effect
+											ease: 'easeOut',
 										}}
 									>
-										{service.icon}
-									</Box>
-									<Typography
-										variant="h5"
-										gutterBottom
-										sx={{
-											fontWeight: 600,
-											color: 'primary.main',
-											mb: 2,
-										}}
-									>
-										{service.title}
-									</Typography>
-									<Typography color="text.secondary" sx={{ lineHeight: 1.7 }}>
-										{service.description}
-									</Typography>
-								</Paper>
-							</Grid>
-						))}
+										<Paper
+											sx={{
+												p: 3,
+												height: '100%',
+												cursor: 'pointer',
+												transition: 'all 0.3s ease',
+												'&:hover': {
+													transform: 'translateY(-5px)',
+													boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+												},
+											}}
+											onClick={() => navigate(`/category/${category._id}`)}
+										>
+											{category.image?.data ? (
+												<Box
+													component="img"
+													src={category.image.data}
+													alt={category.name}
+													sx={{
+														width: '100%',
+														height: 200,
+														objectFit: 'cover',
+														borderRadius: 1,
+														mb: 2,
+													}}
+												/>
+											) : (
+												<Box
+													sx={{
+														width: '100%',
+														height: 200,
+														bgcolor: 'primary.light',
+														borderRadius: 1,
+														mb: 2,
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+													}}
+												>
+													<HealthAndSafetyIcon
+														sx={{ fontSize: 60, color: 'white' }}
+													/>
+												</Box>
+											)}
+											<Typography
+												variant="h5"
+												gutterBottom
+												sx={{
+													fontWeight: 600,
+													color: 'primary.main',
+													mb: 2,
+												}}
+											>
+												{category.name}
+											</Typography>
+											<Typography
+												color="text.secondary"
+												sx={{ lineHeight: 1.7 }}
+											>
+												{category.description}
+											</Typography>
+										</Paper>
+									</motion.div>
+								</Grid>
+							))}
 					</Grid>
+
+					{/* Load More Button */}
+					{filteredCategories.length > visibleCategories && (
+						<Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+							<Button
+								variant="outlined"
+								color="primary"
+								onClick={handleLoadMore}
+								sx={{
+									py: 1,
+									px: 4,
+									borderRadius: '50px',
+									'&:hover': {
+										transform: 'translateY(-2px)',
+									},
+								}}
+							>
+								Load More
+							</Button>
+						</Box>
+					)}
+
+					{/* No Results Message */}
+					{filteredCategories.length === 0 && (
+						<Box sx={{ textAlign: 'center', mt: 4 }}>
+							<Typography variant="h6" color="text.secondary">
+								No services found matching your search.
+							</Typography>
+						</Box>
+					)}
 				</Container>
 			</Box>
 

@@ -14,6 +14,7 @@ import Homepage from './components/Homepage';
 import Signup from './components/Signup';
 import Layout from './components/Layout';
 import ProfileSettings from './components/ProfileSettings';
+import CategoryServices from './components/CategoryServices';
 
 const theme = createTheme({
 	palette: {
@@ -140,6 +141,10 @@ function App() {
 									<ProfileSettings />
 								</PrivateRoute>
 							}
+						/>
+						<Route
+							path="/category/:categoryId"
+							element={<CategoryServices />}
 						/>
 					</Routes>
 				</Layout>

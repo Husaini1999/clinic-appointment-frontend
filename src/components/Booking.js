@@ -30,12 +30,13 @@ import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
 import config from '../config';
 
-function BookingModal({ open, onClose }) {
+function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const theme = useTheme();
 	const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
 	const [activeStep, setActiveStep] = useState(0);
 	const [formData, setFormData] = useState({
 		treatment: '',
+		serviceId: '',
 		appointmentTime: null,
 		notes: '',
 		name: '',
@@ -51,6 +52,8 @@ function BookingModal({ open, onClose }) {
 	const [doctorPreference, setDoctorPreference] = useState('any');
 	const [services, setServices] = useState([]);
 	const [selectedService, setSelectedService] = useState(null);
+	const [categories, setCategories] = useState([]);
+	const [selectedCategory, setSelectedCategory] = useState('');
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -95,6 +98,31 @@ function BookingModal({ open, onClose }) {
 		};
 		fetchServices();
 	}, []);
+
+	useEffect(() => {
+		const fetchCategories = async () => {
+			try {
+				const response = await fetch(`${config.apiUrl}/api/categories`);
+				const data = await response.json();
+				setCategories(data);
+			} catch (error) {
+				console.error('Error fetching categories:', error);
+			}
+		};
+		fetchCategories();
+	}, []);
+
+	useEffect(() => {
+		if (open && initialCategory && initialService) {
+			setSelectedCategory(initialCategory._id);
+			setSelectedService(initialService);
+			setFormData((prev) => ({
+				...prev,
+				treatment: initialService.name,
+				serviceId: initialService._id,
+			}));
+		}
+	}, [open, initialCategory, initialService]);
 
 	const steps = [
 		'Personal Details',
@@ -299,10 +327,24 @@ function BookingModal({ open, onClose }) {
 
 	const handleTreatmentChange = (event) => {
 		const selected = services.find(
-			(service) => service.name === event.target.value
+			(service) => service._id === event.target.value
 		);
 		setSelectedService(selected);
-		setFormData({ ...formData, treatment: event.target.value });
+		setFormData((prev) => ({
+			...prev,
+			treatment: selected?.name || '',
+			serviceId: selected?._id || '',
+		}));
+	};
+
+	const handleCategoryChange = (event) => {
+		setSelectedCategory(event.target.value);
+		setSelectedService(null);
+		setFormData((prev) => ({
+			...prev,
+			treatment: '',
+			serviceId: '',
+		}));
 	};
 
 	const getStepContent = (step) => {
@@ -395,17 +437,53 @@ function BookingModal({ open, onClose }) {
 				return (
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 						<FormControl fullWidth required>
-							<InputLabel>Select Service</InputLabel>
+							<InputLabel>Select Category</InputLabel>
 							<Select
-								value={formData.treatment}
-								onChange={handleTreatmentChange}
-								label="Select Service"
+								value={selectedCategory}
+								onChange={handleCategoryChange}
+								label="Select Category"
 							>
-								{services.map((service) => (
-									<MenuItem key={service._id} value={service.name}>
-										{service.name}
+								{categories.map((category) => (
+									<MenuItem key={category._id} value={category._id}>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+											{category.image?.data && (
+												<Box
+													component="img"
+													src={category.image.data}
+													alt={category.name}
+													sx={{ width: 24, height: 24, borderRadius: '50%' }}
+												/>
+											)}
+											{category.name}
+										</Box>
 									</MenuItem>
 								))}
+							</Select>
+						</FormControl>
+
+						<FormControl fullWidth required>
+							<InputLabel>Select Service</InputLabel>
+							<Select
+								value={formData.serviceId}
+								onChange={handleTreatmentChange}
+								label="Select Service"
+								disabled={!selectedCategory}
+							>
+								{services
+									.filter((service) => {
+										if (!service || !service.category) return false;
+										const serviceCategory =
+											service.category._id || service.category;
+										return (
+											serviceCategory?.toString() ===
+											selectedCategory?.toString()
+										);
+									})
+									.map((service) => (
+										<MenuItem key={service._id} value={service._id}>
+											{service.name}
+										</MenuItem>
+									))}
 							</Select>
 						</FormControl>
 

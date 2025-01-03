@@ -24,6 +24,7 @@ import {
 	AccordionSummary,
 	AccordionDetails,
 	InputAdornment,
+	FormHelperText,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -67,6 +68,15 @@ function ServiceManagement() {
 
 	const [searchQuery, setSearchQuery] = useState('');
 	const [expandedCategories, setExpandedCategories] = useState(new Set());
+
+	// Add validation state
+	const [errors, setErrors] = useState({
+		name: '',
+		description: '',
+		duration: '',
+		price: '',
+		category: '',
+	});
 
 	const filterServicesBySearch = (services, query) => {
 		if (!query) return null;
@@ -294,7 +304,72 @@ function ServiceManagement() {
 		};
 	}, [imagePreview]);
 
+	// Add validation function
+	const validateForm = () => {
+		const newErrors = {};
+		let isValid = true;
+
+		// Validate name
+		if (!serviceFormData.name.trim()) {
+			newErrors.name = 'Service name is required';
+			isValid = false;
+		} else if (serviceFormData.name.length < 3) {
+			newErrors.name = 'Service name must be at least 3 characters';
+			isValid = false;
+		}
+
+		// Validate category
+		if (!serviceFormData.category) {
+			newErrors.category = 'Category is required';
+			isValid = false;
+		}
+
+		// Description is optional, only validate length if provided
+		if (
+			serviceFormData.description.trim() &&
+			serviceFormData.description.length < 10
+		) {
+			newErrors.description =
+				'Description must be at least 10 characters if provided';
+			isValid = false;
+		}
+
+		// Validate duration - changed minimum to 5 minutes
+		const duration = Number(serviceFormData.duration);
+		if (!duration) {
+			newErrors.duration = 'Duration is required';
+			isValid = false;
+		} else if (duration < 5) {
+			newErrors.duration = 'Minimum duration is 5 minutes';
+			isValid = false;
+		} else if (duration > 240) {
+			newErrors.duration = 'Maximum duration is 240 minutes';
+			isValid = false;
+		}
+
+		// Validate price
+		const price = Number(serviceFormData.price);
+		if (!price) {
+			newErrors.price = 'Price is required';
+			isValid = false;
+		} else if (price <= 0) {
+			newErrors.price = 'Price must be greater than 0';
+			isValid = false;
+		} else if (price > 10000) {
+			newErrors.price = 'Maximum price is RM 10,000';
+			isValid = false;
+		}
+
+		setErrors(newErrors);
+		return isValid;
+	};
+
+	// Update handleServiceSubmit
 	const handleServiceSubmit = async () => {
+		if (!validateForm()) {
+			return;
+		}
+
 		try {
 			const formData = new FormData();
 			Object.keys(serviceFormData).forEach((key) => {
@@ -624,16 +699,17 @@ function ServiceManagement() {
 				</DialogTitle>
 				<DialogContent>
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-						<FormControl fullWidth>
+						<FormControl fullWidth error={!!errors.category}>
 							<InputLabel>Category</InputLabel>
 							<Select
 								value={serviceFormData.category}
-								onChange={(e) =>
+								onChange={(e) => {
 									setServiceFormData({
 										...serviceFormData,
 										category: e.target.value,
-									})
-								}
+									});
+									setErrors({ ...errors, category: '' });
+								}}
 								label="Category"
 								required
 							>
@@ -643,55 +719,92 @@ function ServiceManagement() {
 									</MenuItem>
 								))}
 							</Select>
+							{errors.category && (
+								<FormHelperText error>{errors.category}</FormHelperText>
+							)}
 						</FormControl>
+
 						<TextField
 							label="Service Name"
 							value={serviceFormData.name}
-							onChange={(e) =>
-								setServiceFormData({ ...serviceFormData, name: e.target.value })
-							}
+							onChange={(e) => {
+								setServiceFormData({
+									...serviceFormData,
+									name: e.target.value,
+								});
+								setErrors({ ...errors, name: '' });
+							}}
 							fullWidth
 							required
+							error={!!errors.name}
+							helperText={errors.name}
 						/>
+
 						<TextField
-							label="Description"
+							label="Description (Optional)"
 							value={serviceFormData.description}
-							onChange={(e) =>
+							onChange={(e) => {
 								setServiceFormData({
 									...serviceFormData,
 									description: e.target.value,
-								})
-							}
+								});
+								setErrors({ ...errors, description: '' });
+							}}
 							fullWidth
 							multiline
 							rows={3}
+							error={!!errors.description}
+							helperText={
+								errors.description ||
+								'Optional: Minimum 10 characters if provided'
+							}
 						/>
+
 						<TextField
 							label="Duration (minutes)"
 							value={serviceFormData.duration}
-							onChange={(e) =>
+							onChange={(e) => {
 								setServiceFormData({
 									...serviceFormData,
 									duration: e.target.value,
-								})
-							}
+								});
+								setErrors({ ...errors, duration: '' });
+							}}
 							type="number"
 							fullWidth
 							required
+							error={!!errors.duration}
+							helperText={
+								errors.duration || 'Minimum: 5 minutes, Maximum: 240 minutes'
+							}
+							InputProps={{
+								inputProps: { min: 5, max: 240 },
+							}}
 						/>
+
 						<TextField
 							label="Price (MYR)"
 							value={serviceFormData.price}
-							onChange={(e) =>
+							onChange={(e) => {
 								setServiceFormData({
 									...serviceFormData,
 									price: e.target.value,
-								})
-							}
+								});
+								setErrors({ ...errors, price: '' });
+							}}
 							type="number"
 							fullWidth
 							required
+							error={!!errors.price}
+							helperText={errors.price || 'Maximum: RM 10,000'}
+							InputProps={{
+								inputProps: { min: 0, max: 10000 },
+								startAdornment: (
+									<InputAdornment position="start">RM</InputAdornment>
+								),
+							}}
 						/>
+
 						<Box sx={{ mt: 2 }}>
 							<input
 								type="file"
@@ -781,7 +894,11 @@ function ServiceManagement() {
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={() => setOpenServiceDialog(false)}>Cancel</Button>
-					<Button onClick={handleServiceSubmit} variant="contained">
+					<Button
+						onClick={handleServiceSubmit}
+						variant="contained"
+						disabled={Object.keys(errors).some((key) => errors[key])}
+					>
 						{editingService ? 'Update' : 'Add'}
 					</Button>
 				</DialogActions>
