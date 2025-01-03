@@ -49,6 +49,8 @@ function BookingModal({ open, onClose }) {
 	const [emailError, setEmailError] = useState('');
 	const [phoneError, setPhoneError] = useState('');
 	const [doctorPreference, setDoctorPreference] = useState('any');
+	const [services, setServices] = useState([]);
+	const [selectedService, setSelectedService] = useState(null);
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -80,6 +82,19 @@ function BookingModal({ open, onClose }) {
 
 		fetchUserDetails();
 	}, [open]);
+
+	useEffect(() => {
+		const fetchServices = async () => {
+			try {
+				const response = await fetch(`${config.apiUrl}/api/services`);
+				const data = await response.json();
+				setServices(data);
+			} catch (error) {
+				console.error('Error fetching services:', error);
+			}
+		};
+		fetchServices();
+	}, []);
 
 	const steps = [
 		'Personal Details',
@@ -282,6 +297,14 @@ function BookingModal({ open, onClose }) {
 		return isValidPhoneNumber(phone);
 	};
 
+	const handleTreatmentChange = (event) => {
+		const selected = services.find(
+			(service) => service.name === event.target.value
+		);
+		setSelectedService(selected);
+		setFormData({ ...formData, treatment: event.target.value });
+	};
+
 	const getStepContent = (step) => {
 		switch (step) {
 			case 0:
@@ -370,24 +393,79 @@ function BookingModal({ open, onClose }) {
 				);
 			case 1:
 				return (
-					<FormControl fullWidth sx={{ mt: 2 }}>
-						<InputLabel>Select Treatment</InputLabel>
-						<Select
-							value={formData.treatment}
-							label="Select Treatment"
-							onChange={(e) =>
-								setFormData({ ...formData, treatment: e.target.value })
-							}
-							required
-						>
-							<MenuItem value="General Checkup">General Checkup</MenuItem>
-							<MenuItem value="Dental Care">Dental Care</MenuItem>
-							<MenuItem value="Physiotherapy">Physiotherapy</MenuItem>
-							<MenuItem value="Pediatric Care">Pediatric Care</MenuItem>
-							<MenuItem value="Vaccination">Vaccination</MenuItem>
-							<MenuItem value="Geriatric Care">Geriatric Care</MenuItem>
-						</Select>
-					</FormControl>
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+						<FormControl fullWidth required>
+							<InputLabel>Select Service</InputLabel>
+							<Select
+								value={formData.treatment}
+								onChange={handleTreatmentChange}
+								label="Select Service"
+							>
+								{services.map((service) => (
+									<MenuItem key={service._id} value={service.name}>
+										{service.name}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+
+						{selectedService && (
+							<Box
+								sx={{
+									bgcolor: 'grey.50',
+									p: 2,
+									borderRadius: 1,
+									border: '1px solid',
+									borderColor: 'grey.200',
+								}}
+							>
+								<Typography variant="subtitle1" color="primary" gutterBottom>
+									Service Details
+								</Typography>
+
+								<Box sx={{ display: 'grid', gap: 2 }}>
+									<Box
+										sx={{
+											display: 'flex',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+										}}
+									>
+										<Typography variant="body2" color="text.secondary">
+											Duration:
+										</Typography>
+										<Typography variant="body1">
+											{selectedService.duration} minutes
+										</Typography>
+									</Box>
+
+									<Box
+										sx={{
+											display: 'flex',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+										}}
+									>
+										<Typography variant="body2" color="text.secondary">
+											Price:
+										</Typography>
+										<Typography variant="body1">
+											RM {selectedService.price}
+										</Typography>
+									</Box>
+
+									<Box sx={{ mt: 1 }}>
+										<Typography variant="body2" color="text.secondary">
+											Description:
+										</Typography>
+										<Typography variant="body1" sx={{ mt: 0.5 }}>
+											{selectedService.description}
+										</Typography>
+									</Box>
+								</Box>
+							</Box>
+						)}
+					</Box>
 				);
 			case 2:
 				return (

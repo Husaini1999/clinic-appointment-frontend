@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ServiceManagement from './ServiceManagement';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import AppointmentManagement from './AppointmentManagement';
@@ -149,9 +150,10 @@ function StaffDashboard() {
 					sx={{ borderBottom: 1, borderColor: 'divider' }}
 				>
 					<Tab label="Appointments" />
-					{user.role?.toUpperCase() === 'ADMIN' && (
-						<Tab label="User Management" />
-					)}
+					{user.role?.toUpperCase() === 'ADMIN' && [
+						<Tab key="user" label="User Management" />,
+						<Tab key="service" label="Service Management" />,
+					]}
 				</Tabs>
 			</Paper>
 
@@ -162,9 +164,14 @@ function StaffDashboard() {
 				/>
 			</TabPanel>
 
-			<TabPanel value={activeTab} index={1}>
-				<UserManagement />
-			</TabPanel>
+			{user.role?.toUpperCase() === 'ADMIN' && [
+				<TabPanel key="user-panel" value={activeTab} index={1}>
+					<UserManagement />
+				</TabPanel>,
+				<TabPanel key="service-panel" value={activeTab} index={2}>
+					<ServiceManagement />
+				</TabPanel>,
+			]}
 		</Container>
 	);
 }
