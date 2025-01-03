@@ -11,8 +11,6 @@ import {
 	IconButton,
 	Button,
 	Modal,
-	Fade,
-	Backdrop,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
@@ -187,57 +185,50 @@ function CategoryServices() {
 			<Modal
 				open={openImagePreview}
 				onClose={handleClosePreview}
-				closeAfterTransition
-				BackdropComponent={Backdrop}
-				BackdropProps={{
-					timeout: 500,
-				}}
 				sx={{
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
 				}}
 			>
-				<Fade in={openImagePreview}>
-					<Box
+				<Box
+					sx={{
+						position: 'relative',
+						maxWidth: '90vw',
+						maxHeight: '90vh',
+						bgcolor: 'background.paper',
+						borderRadius: 1,
+						boxShadow: 24,
+						p: 1,
+					}}
+				>
+					<IconButton
+						onClick={handleClosePreview}
 						sx={{
-							position: 'relative',
-							maxWidth: '90vw',
-							maxHeight: '90vh',
-							bgcolor: 'background.paper',
-							borderRadius: 1,
-							boxShadow: 24,
-							p: 1,
+							position: 'absolute',
+							right: 8,
+							top: 8,
+							bgcolor: 'rgba(0, 0, 0, 0.5)',
+							color: 'white',
+							'&:hover': {
+								bgcolor: 'rgba(0, 0, 0, 0.7)',
+							},
+							zIndex: 1,
 						}}
 					>
-						<IconButton
-							onClick={handleClosePreview}
-							sx={{
-								position: 'absolute',
-								right: 8,
-								top: 8,
-								bgcolor: 'rgba(0, 0, 0, 0.5)',
-								color: 'white',
-								'&:hover': {
-									bgcolor: 'rgba(0, 0, 0, 0.7)',
-								},
-								zIndex: 1,
-							}}
-						>
-							<CloseIcon />
-						</IconButton>
-						<img
-							src={selectedImage}
-							alt="Service preview"
-							style={{
-								maxWidth: '100%',
-								maxHeight: '85vh',
-								display: 'block',
-								objectFit: 'contain',
-							}}
-						/>
-					</Box>
-				</Fade>
+						<CloseIcon />
+					</IconButton>
+					<img
+						src={selectedImage}
+						alt="Service preview"
+						style={{
+							maxWidth: '100%',
+							maxHeight: '85vh',
+							display: 'block',
+							objectFit: 'contain',
+						}}
+					/>
+				</Box>
 			</Modal>
 
 			<BookingModal
