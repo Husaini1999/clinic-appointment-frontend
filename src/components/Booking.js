@@ -25,7 +25,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { addDays, set, format, isBefore, startOfDay } from 'date-fns';
+import { addDays, set, format, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
 import config from '../config';
@@ -115,22 +115,21 @@ function BookingModal({ open, onClose }) {
 	const isValidAppointmentTime = (date) => {
 		if (!date) return false;
 
-		// Check if date is in the past
-		if (isBefore(date, startOfDay(new Date()))) {
+		const now = new Date();
+		const selectedDateTime = new Date(date);
+
+		// If it's a future date (not today), only check business hours and weekday
+		if (selectedDateTime.toDateString() !== now.toDateString()) {
+			return isWeekday(date) && isWithinBusinessHours(date);
+		}
+
+		// If it's today, check if the time has passed
+		if (isBefore(selectedDateTime, now)) {
 			return false;
 		}
 
-		// Check if it's a weekday
-		if (!isWeekday(date)) {
-			return false;
-		}
-
-		// Check if within business hours
-		if (!isWithinBusinessHours(date)) {
-			return false;
-		}
-
-		return true;
+		// Check if it's a weekday and within business hours
+		return isWeekday(date) && isWithinBusinessHours(date);
 	};
 
 	const getTimeSlots = () => {
@@ -143,9 +142,9 @@ function BookingModal({ open, onClose }) {
 			for (let minute = 0; minute < 60; minute += interval) {
 				if (hour === endHour && minute > 0) break;
 
-				const date = new Date();
-				date.setHours(hour, minute, 0, 0);
-				slots.push(format(date, 'p')); // Using 'p' format for consistent 12-hour time
+				const slotDate = new Date();
+				slotDate.setHours(hour, minute, 0, 0);
+				slots.push(format(slotDate, 'p')); // Using 'p' format for consistent 12-hour time
 			}
 		}
 		return slots;
@@ -410,7 +409,14 @@ function BookingModal({ open, onClose }) {
 								label="Select Appointment Date"
 								value={formData.appointmentTime}
 								onChange={(newValue) => {
-									setFormData({ ...formData, appointmentTime: newValue });
+									// Reset the time when date changes by setting hours and minutes to 0
+									const newDate = newValue
+										? set(newValue, { hours: 0, minutes: 0, seconds: 0 })
+										: null;
+									setFormData({
+										...formData,
+										appointmentTime: newDate,
+									});
 								}}
 								shouldDisableDate={(date) => !isWeekday(date)}
 								minDate={new Date()}
@@ -469,7 +475,33 @@ function BookingModal({ open, onClose }) {
 										}}
 										disabled={
 											!formData.appointmentTime ||
-											!isWeekday(formData.appointmentTime)
+											!isWeekday(formData.appointmentTime) ||
+											(() => {
+												if (!formData.appointmentTime) return true;
+
+												const now = new Date();
+												const slotTime = new Date(formData.appointmentTime);
+												const [time, period] = slot.split(' ');
+												const [hours, minutes] = time.split(':');
+												let hour = parseInt(hours);
+
+												// Convert to 24-hour format
+												if (period === 'PM' && hour !== 12) {
+													hour += 12;
+												} else if (period === 'AM' && hour === 12) {
+													hour = 0;
+												}
+
+												slotTime.setHours(hour, parseInt(minutes), 0, 0);
+
+												// If it's a future date, only check business hours
+												if (slotTime.toDateString() !== now.toDateString()) {
+													return false;
+												}
+
+												// If it's today, check if the time has passed
+												return isBefore(slotTime, now);
+											})()
 										}
 										sx={{
 											minWidth: '90px',
