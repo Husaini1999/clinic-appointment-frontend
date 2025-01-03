@@ -29,6 +29,10 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
 import config from '../config';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 
 const statusDisplayNames = {
 	all: 'All',
@@ -66,6 +70,83 @@ const CancelModal = React.memo(
 					disabled={!notes.trim()}
 				>
 					Cancel Appointment
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+);
+
+const RescheduleModal = React.memo(
+	({
+		open,
+		onClose,
+		onReschedule,
+		appointmentId,
+		notes,
+		onNotesChange,
+		currentDateTime,
+	}) => (
+		<Dialog open={open} onClose={onClose}>
+			<DialogTitle>Reschedule Appointment</DialogTitle>
+			<DialogContent>
+				<Typography variant="body2" sx={{ mb: 2 }}>
+					Please select a new date and time for this appointment.
+				</Typography>
+				<LocalizationProvider dateAdapter={AdapterDateFns}>
+					<DateTimePicker
+						label="New Appointment Time"
+						value={notes.newDateTime || null}
+						onChange={(newValue) => {
+							onNotesChange({
+								target: {
+									value: {
+										...notes,
+										newDateTime: newValue,
+									},
+								},
+							});
+						}}
+						minDate={new Date()}
+						shouldDisableDate={(date) => {
+							const day = date.getDay();
+							return day === 0 || day === 6; // Disable weekends
+						}}
+						shouldDisableTime={(time, type) => {
+							const hours = time.getHours();
+							return hours < 9 || hours >= 17; // 9 AM to 5 PM
+						}}
+						sx={{ width: '100%', mt: 2 }}
+					/>
+				</LocalizationProvider>
+				<TextField
+					fullWidth
+					multiline
+					rows={4}
+					label="Reason for Rescheduling (Required)"
+					value={notes.reason || ''}
+					onChange={(e) =>
+						onNotesChange({
+							target: {
+								value: {
+									...notes,
+									reason: e.target.value,
+								},
+							},
+						})
+					}
+					margin="normal"
+					required
+				/>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose}>Cancel</Button>
+				<Button
+					onClick={() => onReschedule(appointmentId)}
+					color="primary"
+					variant="contained"
+					disabled={!notes.reason?.trim() || !notes.newDateTime}
+				>
+					Reschedule
 				</Button>
 			</DialogActions>
 		</Dialog>
@@ -132,6 +213,11 @@ function Dashboard() {
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 	const [upcomingPage, setUpcomingPage] = useState(0);
 	const [pastPage, setPastPage] = useState(0);
+	const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+	const [rescheduleNotes, setRescheduleNotes] = useState({
+		reason: '',
+		newDateTime: null,
+	});
 
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -343,6 +429,53 @@ function Dashboard() {
 		setPastPage(0);
 	};
 
+	const handleRescheduleClick = (appointment) => {
+		setSelectedAppointment(appointment);
+		setRescheduleModalOpen(true);
+	};
+
+	const handleRescheduleClose = () => {
+		setRescheduleModalOpen(false);
+		setSelectedAppointment(null);
+		setRescheduleNotes({ reason: '', newDateTime: null });
+	};
+
+	const handleRescheduleAppointment = async (appointmentId) => {
+		try {
+			const token = localStorage.getItem('token');
+			if (!token) {
+				console.error('No token found');
+				return;
+			}
+
+			const response = await fetch(
+				`${config.apiUrl}/api/appointments/${appointmentId}/reschedule`,
+				{
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						newDateTime: rescheduleNotes.newDateTime,
+						reason: rescheduleNotes.reason,
+					}),
+				}
+			);
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				console.error('Server error:', errorData);
+				return;
+			}
+
+			handleRescheduleClose();
+			fetchAppointments();
+		} catch (error) {
+			console.error('Error rescheduling appointment:', error);
+		}
+	};
+
 	return (
 		<Container
 			maxWidth="lg"
@@ -417,10 +550,10 @@ function Dashboard() {
 							<TableCell width="15%" align="center">
 								Status
 							</TableCell>
-							<TableCell width="25%" align="center" className="hide-on-mobile">
+							<TableCell width="20%" align="center" className="hide-on-mobile">
 								Notes History
 							</TableCell>
-							<TableCell width="15%" align="center">
+							<TableCell width="20%" align="center">
 								Actions
 							</TableCell>
 						</TableRow>
@@ -462,9 +595,32 @@ function Dashboard() {
 													display: 'flex',
 													justifyContent: 'center',
 													alignItems: 'center',
+													gap: 1,
 													height: '100%',
 												}}
 											>
+												<Button
+													variant="contained"
+													color="primary"
+													size="small"
+													onClick={() => handleRescheduleClick(appointment)}
+													sx={{
+														boxShadow: 2,
+														'&:hover': {
+															boxShadow: 4,
+															backgroundColor: (theme) =>
+																theme.palette.primary.dark,
+														},
+														padding: '4px 12px',
+														fontSize: '0.8rem',
+														minWidth: 'auto',
+														textTransform: 'none',
+														borderRadius: '4px',
+														fontWeight: 500,
+													}}
+												>
+													Reschedule
+												</Button>
 												<Button
 													variant="contained"
 													color="error"
@@ -626,6 +782,16 @@ function Dashboard() {
 				appointmentId={selectedAppointment?._id}
 				notes={cancelNotes}
 				onNotesChange={(e) => setCancelNotes(e.target.value)}
+			/>
+
+			<RescheduleModal
+				open={rescheduleModalOpen}
+				onClose={handleRescheduleClose}
+				onReschedule={handleRescheduleAppointment}
+				appointmentId={selectedAppointment?._id}
+				notes={rescheduleNotes}
+				onNotesChange={(e) => setRescheduleNotes(e.target.value)}
+				currentDateTime={selectedAppointment?.appointmentTime}
 			/>
 		</Container>
 	);
