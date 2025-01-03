@@ -19,6 +19,7 @@ import {
 	IconButton,
 	useTheme,
 	useMediaQuery,
+	InputAdornment,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -40,6 +41,8 @@ function BookingModal({ open, onClose }) {
 		name: '',
 		email: '',
 		phone: '',
+		weight: '',
+		height: '',
 	});
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState('');
@@ -209,6 +212,8 @@ function BookingModal({ open, onClose }) {
 						name: '',
 						email: '',
 						phone: '',
+						weight: '',
+						height: '',
 					});
 					setActiveStep(0);
 					setSuccess('');
@@ -311,6 +316,36 @@ function BookingModal({ open, onClose }) {
 									WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
 								},
 							}}
+						/>
+						<TextField
+							fullWidth
+							label="Weight (kg)"
+							type="number"
+							value={formData.weight}
+							onChange={(e) =>
+								setFormData({ ...formData, weight: e.target.value })
+							}
+							InputProps={{
+								endAdornment: (
+									<InputAdornment position="end">kg</InputAdornment>
+								),
+							}}
+							placeholder="Optional"
+						/>
+						<TextField
+							fullWidth
+							label="Height (cm)"
+							type="number"
+							value={formData.height}
+							onChange={(e) =>
+								setFormData({ ...formData, height: e.target.value })
+							}
+							InputProps={{
+								endAdornment: (
+									<InputAdornment position="end">cm</InputAdornment>
+								),
+							}}
+							placeholder="Optional"
 						/>
 					</Box>
 				);
