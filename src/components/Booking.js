@@ -48,6 +48,7 @@ function BookingModal({ open, onClose }) {
 	const [success, setSuccess] = useState('');
 	const [emailError, setEmailError] = useState('');
 	const [phoneError, setPhoneError] = useState('');
+	const [doctorPreference, setDoctorPreference] = useState('any');
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -157,12 +158,28 @@ function BookingModal({ open, onClose }) {
 			!isValidAppointmentTime(formData.appointmentTime)
 		) {
 			setError('Please select a valid appointment time.');
-			return; // Prevent submission if the appointment time is invalid
+			return;
 		}
 
 		try {
-			// Clean phone number before sending to backend
 			const cleanPhone = formData.phone.replace(/\s+/g, '');
+
+			// Format doctor preference message
+			let preferenceMessage = '';
+			switch (doctorPreference) {
+				case 'male':
+					preferenceMessage = 'Male doctor preferred';
+					break;
+				case 'female':
+					preferenceMessage = 'Female doctor preferred';
+					break;
+				case 'any':
+				default:
+					break;
+			}
+
+			// Combine preference message with notes
+			const notesWithPreference = `${preferenceMessage}\n\n${formData.notes}`;
 
 			// First, update the user's phone number if they're logged in
 			const token = localStorage.getItem('token');
@@ -184,7 +201,7 @@ function BookingModal({ open, onClose }) {
 				}
 			}
 
-			// Then create the appointment with cleaned phone number
+			// Create appointment with formatted notes
 			const response = await fetch(`${config.apiUrl}/api/appointments/create`, {
 				method: 'POST',
 				headers: {
@@ -193,6 +210,7 @@ function BookingModal({ open, onClose }) {
 				body: JSON.stringify({
 					...formData,
 					phone: cleanPhone,
+					notes: notesWithPreference,
 				}),
 			});
 
@@ -215,6 +233,7 @@ function BookingModal({ open, onClose }) {
 						weight: '',
 						height: '',
 					});
+					setDoctorPreference('any'); // Reset doctor preference
 					setActiveStep(0);
 					setSuccess('');
 					setError('');
@@ -518,18 +537,47 @@ function BookingModal({ open, onClose }) {
 				);
 			case 3:
 				return (
-					<TextField
-						fullWidth
-						multiline
-						rows={4}
-						label="Additional Notes"
-						value={formData.notes}
-						onChange={(e) =>
-							setFormData({ ...formData, notes: e.target.value })
-						}
-						placeholder="Please provide any additional information or specific concerns..."
-						sx={{ mt: 2 }}
-					/>
+					<Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+						<FormControl fullWidth>
+							<InputLabel>Preferred Doctor Gender</InputLabel>
+							<Select
+								value={doctorPreference}
+								label="Preferred Doctor Gender"
+								onChange={(e) => setDoctorPreference(e.target.value)}
+							>
+								<MenuItem value="any">No Preference</MenuItem>
+								<MenuItem value="male">Male Doctor</MenuItem>
+								<MenuItem value="female">Female Doctor</MenuItem>
+							</Select>
+							<Typography
+								variant="caption"
+								color="text.secondary"
+								sx={{
+									mt: 1,
+									ml: 1,
+									display: 'flex',
+									alignItems: 'center',
+									gap: 0.5,
+								}}
+							>
+								<InfoIcon sx={{ fontSize: 16 }} />
+								This preference will be considered but cannot be guaranteed
+								based on doctor availability
+							</Typography>
+						</FormControl>
+
+						<TextField
+							fullWidth
+							multiline
+							rows={4}
+							label="Additional Notes"
+							value={formData.notes}
+							onChange={(e) =>
+								setFormData({ ...formData, notes: e.target.value })
+							}
+							placeholder="Please provide any additional information or specific concerns..."
+						/>
+					</Box>
 				);
 			default:
 				return 'Unknown step';
