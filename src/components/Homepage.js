@@ -80,7 +80,7 @@ function Homepage() {
 				id="home"
 				sx={{
 					position: 'relative',
-					minHeight: '92vh',
+					minHeight: '95vh',
 					display: 'flex',
 					flexDirection: 'column',
 					justifyContent: 'center',
@@ -104,7 +104,7 @@ function Homepage() {
 						position: 'relative',
 						zIndex: 2,
 						textAlign: 'center',
-						py: { xs: 8, md: 15 },
+						py: { xs: 10, md: 16 },
 					}}
 				>
 					<Typography
@@ -112,12 +112,13 @@ function Homepage() {
 						component="h1"
 						gutterBottom
 						sx={{
-							fontSize: { xs: '2.5rem', md: '4rem' },
+							fontSize: { xs: '2.75rem', sm: '3.5rem', md: '4.5rem' },
 							fontWeight: 800,
 							color: 'white',
 							textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
 							mb: 4,
-							lineHeight: 1.2,
+							lineHeight: 1.1,
+							letterSpacing: '-0.02em',
 						}}
 					>
 						Welcome to <br />
@@ -126,7 +127,7 @@ function Homepage() {
 							sx={{
 								color: 'secondary.main',
 								display: 'block',
-								mt: 1,
+								mt: 2,
 							}}
 						>
 							Primer Cherang Clinic
@@ -134,22 +135,28 @@ function Homepage() {
 					</Typography>
 					<Typography
 						variant="h5"
-						component="h2"
-						gutterBottom
 						sx={{
-							fontSize: { xs: '1.2rem', md: '1.5rem' },
-							mb: 6,
+							fontSize: { xs: '1.25rem', md: '1.75rem' },
+							mb: 8,
 							color: 'rgba(255,255,255,0.9)',
-							fontWeight: 400,
+							fontWeight: 300,
 							maxWidth: '800px',
 							mx: 'auto',
-							lineHeight: 1.6,
+							lineHeight: 1.8,
+							letterSpacing: '0.01em',
 						}}
 					>
 						Your Health is Our Priority. Experience compassionate care with our
 						team of dedicated healthcare professionals.
 					</Typography>
-					<Box sx={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+					<Box
+						sx={{
+							display: 'flex',
+							gap: 4,
+							justifyContent: 'center',
+							flexWrap: 'wrap',
+						}}
+					>
 						<Button
 							variant="contained"
 							color="secondary"
@@ -228,9 +235,21 @@ function Homepage() {
 			<Box
 				id="about"
 				sx={{
-					py: 12,
-					bgcolor: 'background.default',
+					py: { xs: 6, md: 10 },
+					bgcolor: '#ffffff',
 					position: 'relative',
+					borderBottom: '1px solid',
+					borderColor: 'grey.100',
+					'&::before': {
+						content: '""',
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						height: '8px',
+						background:
+							'linear-gradient(180deg, rgba(0,0,0,0.03) 0%, transparent 100%)',
+					},
 				}}
 			>
 				<Container maxWidth="lg">
@@ -239,28 +258,71 @@ function Homepage() {
 						component="h2"
 						gutterBottom
 						align="center"
-						color="primary"
-						sx={{ mb: 6 }}
+						sx={{
+							fontSize: { xs: '2.5rem', md: '3.5rem' },
+							mb: 5,
+							color: '#000000',
+							fontWeight: 700,
+							letterSpacing: '-0.02em',
+						}}
 					>
 						About Us
 					</Typography>
-					<Box sx={{ mb: 4, textAlign: 'center' }}>
+					<Box
+						sx={{
+							mb: 4,
+							textAlign: 'center',
+							maxWidth: '900px',
+							mx: 'auto',
+						}}
+					>
 						<HealthAndSafetyIcon
-							sx={{ fontSize: 60, color: 'secondary.main', mb: 2 }}
+							sx={{
+								fontSize: 72,
+								color: 'secondary.main',
+								mb: 4,
+							}}
 						/>
-						<Typography variant="body1" paragraph sx={{ lineHeight: 1.6 }}>
+						<Typography
+							variant="body1"
+							paragraph
+							sx={{
+								lineHeight: 1.8,
+								fontSize: '1.125rem',
+								color: 'text.primary',
+								mb: 3,
+							}}
+						>
 							Welcome to Primer Clinic! Our mission is to provide compassionate
 							and high-quality healthcare to our community. We believe in
 							treating our patients with respect and dignity, ensuring that they
 							receive the best possible care.
 						</Typography>
-						<Typography variant="body1" paragraph sx={{ lineHeight: 1.6 }}>
+						<Typography
+							variant="body1"
+							paragraph
+							sx={{
+								lineHeight: 1.8,
+								fontSize: '1.125rem',
+								color: 'text.primary',
+								mb: 3,
+							}}
+						>
 							Our team of dedicated healthcare professionals is committed to
 							your health and well-being. With years of experience in various
 							medical fields, we are here to support you and your family with
 							all your healthcare needs.
 						</Typography>
-						<Typography variant="body1" paragraph sx={{ lineHeight: 1.6 }}>
+						<Typography
+							variant="body1"
+							paragraph
+							sx={{
+								lineHeight: 1.8,
+								fontSize: '1.125rem',
+								color: 'text.primary',
+								mb: 3,
+							}}
+						>
 							At Primer Clinic, we offer a wide range of services, including
 							general checkups, dental care, physiotherapy, and more. We strive
 							to create a welcoming environment where you can feel comfortable
@@ -293,9 +355,19 @@ function Homepage() {
 			<Box
 				id="services"
 				sx={{
-					py: 8,
-					bgcolor: 'background.default',
+					py: { xs: 6, md: 10 },
+					bgcolor: '#f8f9fa',
 					position: 'relative',
+					'&::before': {
+						content: '""',
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						height: '8px',
+						background:
+							'linear-gradient(180deg, rgba(0,0,0,0.03) 0%, transparent 100%)',
+					},
 				}}
 			>
 				<Container maxWidth="lg">
@@ -304,23 +376,49 @@ function Homepage() {
 						component="h2"
 						gutterBottom
 						align="center"
-						sx={{ mb: 6 }}
+						sx={{
+							fontSize: { xs: '2.5rem', md: '3.5rem' },
+							mb: 2,
+							color: '#000000',
+							fontWeight: 700,
+							letterSpacing: '-0.02em',
+						}}
 					>
 						Our Services
 					</Typography>
 
 					{/* Search Bar */}
-					<Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+					<Box
+						sx={{
+							mb: 5,
+							mt: 2,
+							display: 'flex',
+							justifyContent: 'center',
+							maxWidth: '600px',
+							mx: 'auto',
+						}}
+					>
 						<TextField
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 							placeholder="Search services..."
 							variant="outlined"
-							sx={{ width: { xs: '100%', sm: '400px' } }}
+							fullWidth
+							sx={{
+								backgroundColor: 'white',
+								borderRadius: 2,
+								'& .MuiOutlinedInput-root': {
+									fontSize: '1.1rem',
+									py: 1,
+									'&:hover fieldset': {
+										borderColor: 'grey.400',
+									},
+								},
+							}}
 							InputProps={{
 								startAdornment: (
 									<InputAdornment position="start">
-										<SearchIcon color="action" />
+										<SearchIcon sx={{ color: 'grey.600' }} />
 									</InputAdornment>
 								),
 							}}
@@ -444,8 +542,8 @@ function Homepage() {
 			<Box
 				id="contact"
 				sx={{
-					py: 12,
-					bgcolor: 'primary.light',
+					py: { xs: 6, md: 10 },
+					bgcolor: '#000000',
 					color: 'white',
 					position: 'relative',
 				}}
@@ -456,7 +554,12 @@ function Homepage() {
 						component="h2"
 						gutterBottom
 						align="center"
-						sx={{ mb: 6 }}
+						sx={{
+							fontSize: { xs: '2.5rem', md: '3.5rem' },
+							mb: 5,
+							fontWeight: 700,
+							letterSpacing: '-0.02em',
+						}}
 					>
 						Contact Us
 					</Typography>
@@ -464,22 +567,38 @@ function Homepage() {
 						<Grid item xs={12} md={4}>
 							<Paper
 								sx={{
-									p: 4,
+									p: 5,
 									height: '100%',
 									transition: 'all 0.3s ease',
+									backgroundColor: 'rgba(255,255,255,0.98)',
 									'&:hover': {
 										transform: 'translateY(-5px)',
-										boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+										boxShadow: '0 12px 28px rgba(255,0,0,0.2)',
 									},
 								}}
 							>
 								<LocationOnIcon
 									sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }}
 								/>
-								<Typography variant="h6" gutterBottom>
+								<Typography
+									variant="h6"
+									gutterBottom
+									sx={{
+										fontSize: '1.25rem',
+										fontWeight: 600,
+										color: '#000000',
+										mb: 2,
+									}}
+								>
 									Location
 								</Typography>
-								<Typography>
+								<Typography
+									sx={{
+										fontSize: '1.1rem',
+										color: '#666666',
+										lineHeight: 1.8,
+									}}
+								>
 									123 Cherang Street
 									<br />
 									Kuala Lumpur, 50450
@@ -491,22 +610,38 @@ function Homepage() {
 						<Grid item xs={12} md={4}>
 							<Paper
 								sx={{
-									p: 4,
+									p: 5,
 									height: '100%',
 									transition: 'all 0.3s ease',
+									backgroundColor: 'rgba(255,255,255,0.98)',
 									'&:hover': {
 										transform: 'translateY(-5px)',
-										boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+										boxShadow: '0 12px 28px rgba(255,0,0,0.2)',
 									},
 								}}
 							>
 								<PhoneIcon
 									sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }}
 								/>
-								<Typography variant="h6" gutterBottom>
+								<Typography
+									variant="h6"
+									gutterBottom
+									sx={{
+										fontSize: '1.25rem',
+										fontWeight: 600,
+										color: '#000000',
+										mb: 2,
+									}}
+								>
 									Phone
 								</Typography>
-								<Typography>
+								<Typography
+									sx={{
+										fontSize: '1.1rem',
+										color: '#666666',
+										lineHeight: 1.8,
+									}}
+								>
 									+60 3-1234 5678
 									<br />
 									Emergency: +60 3-1234 5679
@@ -516,22 +651,38 @@ function Homepage() {
 						<Grid item xs={12} md={4}>
 							<Paper
 								sx={{
-									p: 4,
+									p: 5,
 									height: '100%',
 									transition: 'all 0.3s ease',
+									backgroundColor: 'rgba(255,255,255,0.98)',
 									'&:hover': {
 										transform: 'translateY(-5px)',
-										boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+										boxShadow: '0 12px 28px rgba(255,0,0,0.2)',
 									},
 								}}
 							>
 								<EmailIcon
 									sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }}
 								/>
-								<Typography variant="h6" gutterBottom>
+								<Typography
+									variant="h6"
+									gutterBottom
+									sx={{
+										fontSize: '1.25rem',
+										fontWeight: 600,
+										color: '#000000',
+										mb: 2,
+									}}
+								>
 									Email
 								</Typography>
-								<Typography>
+								<Typography
+									sx={{
+										fontSize: '1.1rem',
+										color: '#666666',
+										lineHeight: 1.8,
+									}}
+								>
 									info@primercherang.com
 									<br />
 									support@primercherang.com
