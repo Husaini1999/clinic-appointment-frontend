@@ -75,6 +75,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 							name: userData.name || '',
 							email: userData.email || '',
 							phone: userData.phone || '',
+							weight: userData.weight || '',
+							height: userData.height || '',
 						}));
 					}
 				} catch (error) {
@@ -235,7 +237,12 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 							'Content-Type': 'application/json',
 							Authorization: `Bearer ${token}`,
 						},
-						body: JSON.stringify({ phone: cleanPhone }),
+						body: JSON.stringify({
+							phone: cleanPhone,
+							// Only include weight/height if they are provided
+							...(formData.weight && { weight: formData.weight }),
+							...(formData.height && { height: formData.height }),
+						}),
 					}
 				);
 
@@ -245,16 +252,24 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			}
 
 			// Create appointment with formatted notes
+			const appointmentPayload = {
+				...formData,
+				phone: cleanPhone,
+				notes: notesWithPreference,
+			};
+
+			// Only include weight/height in appointment if user is not logged in
+			if (!token) {
+				appointmentPayload.weight = formData.weight || null;
+				appointmentPayload.height = formData.height || null;
+			}
+
 			const response = await fetch(`${config.apiUrl}/api/appointments/create`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({
-					...formData,
-					phone: cleanPhone,
-					notes: notesWithPreference,
-				}),
+				body: JSON.stringify(appointmentPayload),
 			});
 
 			const data = await response.json();
@@ -415,6 +430,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 								),
 							}}
 							placeholder="Optional"
+							disabled={!!formData.weight && localStorage.getItem('token')}
+							sx={{
+								'& .MuiInputBase-input.Mui-disabled': {
+									bgcolor: 'rgba(0, 0, 0, 0.05)',
+									WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
+								},
+							}}
 						/>
 						<TextField
 							fullWidth
@@ -430,6 +452,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 								),
 							}}
 							placeholder="Optional"
+							disabled={!!formData.height && localStorage.getItem('token')}
+							sx={{
+								'& .MuiInputBase-input.Mui-disabled': {
+									bgcolor: 'rgba(0, 0, 0, 0.05)',
+									WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
+								},
+							}}
 						/>
 					</Box>
 				);

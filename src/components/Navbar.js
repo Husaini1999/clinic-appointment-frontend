@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
 	Button,
 	Box,
@@ -64,11 +64,11 @@ function Navbar({ mobileOpen, onMobileClose }) {
 
 	const handleOpenBooking = () => {
 		setOpenBooking(true);
-		onMobileClose();
 	};
 
 	const handleCloseBooking = () => {
 		setOpenBooking(false);
+		onMobileClose();
 	};
 
 	// Define navigation items
@@ -110,7 +110,12 @@ function Navbar({ mobileOpen, onMobileClose }) {
 						<ListItemText primary="Dashboard" />
 					</ListItem>
 					{user.role === 'patient' && (
-						<ListItem button onClick={handleOpenBooking}>
+						<ListItem
+							button
+							onClick={() => {
+								handleOpenBooking();
+							}}
+						>
 							<ListItemIcon>
 								<CalendarTodayIcon />
 							</ListItemIcon>
@@ -153,16 +158,16 @@ function Navbar({ mobileOpen, onMobileClose }) {
 		</Box>
 	);
 
-	if (isMobile) {
-		return (
-			<>
+	return (
+		<>
+			{isMobile ? (
 				<Drawer
 					variant="temporary"
 					anchor="left"
 					open={mobileOpen}
 					onClose={onMobileClose}
 					ModalProps={{
-						keepMounted: true, // Better open performance on mobile.
+						keepMounted: true,
 					}}
 					sx={{
 						'& .MuiDrawer-paper': {
@@ -174,53 +179,15 @@ function Navbar({ mobileOpen, onMobileClose }) {
 				>
 					{drawer}
 				</Drawer>
-				<BookingModal open={openBooking} onClose={handleCloseBooking} />
-			</>
-		);
-	}
-
-	// Return desktop navigation
-	return (
-		<Box
-			sx={{
-				display: 'flex',
-				gap: { xs: 1, md: 2 },
-				alignItems: 'center',
-			}}
-		>
-			{navItems.map((item) => (
-				<Button
-					key={item.label}
-					color="primary"
-					onClick={() => handleNavigation(item.path)}
-					sx={{
-						fontWeight: 500,
-						px: 1,
-						color: 'text.primary',
-						'&:hover': {
-							backgroundColor: 'rgba(0,0,0,0.05)',
-						},
-					}}
+			) : (
+				<Box
+					sx={{ display: 'flex', gap: { xs: 1, md: 2 }, alignItems: 'center' }}
 				>
-					{item.label}
-				</Button>
-			))}
-
-			{user ? (
-				<>
-					<Box
-						sx={{
-							border: '1px solid',
-							borderColor: 'primary.main',
-							borderRadius: '8px',
-							padding: '4px',
-							display: 'flex',
-							gap: 1,
-						}}
-					>
+					{navItems.map((item) => (
 						<Button
+							key={item.label}
 							color="primary"
-							onClick={() => handleNavigation('/dashboard')}
+							onClick={() => handleNavigation(item.path)}
 							sx={{
 								fontWeight: 500,
 								px: 1,
@@ -230,84 +197,122 @@ function Navbar({ mobileOpen, onMobileClose }) {
 								},
 							}}
 						>
-							<DashboardIcon sx={{ mr: 1 }} />
-							Dashboard
+							{item.label}
 						</Button>
-						{user.role === 'patient' && (
+					))}
+
+					{user ? (
+						<>
+							<Box
+								sx={{
+									border: '1px solid',
+									borderColor: 'primary.main',
+									borderRadius: '8px',
+									padding: '4px',
+									display: 'flex',
+									gap: 1,
+								}}
+							>
+								<Button
+									color="primary"
+									onClick={() => handleNavigation('/dashboard')}
+									sx={{
+										fontWeight: 500,
+										px: 1,
+										color: 'text.primary',
+										'&:hover': {
+											backgroundColor: 'rgba(0,0,0,0.05)',
+										},
+									}}
+								>
+									<DashboardIcon sx={{ mr: 1 }} />
+									Dashboard
+								</Button>
+								{user.role === 'patient' && (
+									<Button
+										color="primary"
+										onClick={() => {
+											handleOpenBooking();
+										}}
+										sx={{
+											fontWeight: 500,
+											px: 1,
+											color: 'text.primary',
+											'&:hover': {
+												backgroundColor: 'rgba(0,0,0,0.05)',
+											},
+										}}
+									>
+										<CalendarTodayIcon sx={{ mr: 1 }} />
+										Book Appointment
+									</Button>
+								)}
+								<Button
+									color="primary"
+									onClick={() => handleNavigation('/profile')}
+									sx={{
+										fontWeight: 500,
+										px: 1,
+										color: 'text.primary',
+										'&:hover': {
+											backgroundColor: 'rgba(0,0,0,0.05)',
+										},
+									}}
+								>
+									<AccountCircleIcon sx={{ mr: 1 }} />
+									Profile
+								</Button>
+							</Box>
 							<Button
-								color="primary"
-								onClick={handleOpenBooking}
+								color="secondary"
+								variant="contained"
+								onClick={handleLogout}
 								sx={{
 									fontWeight: 500,
-									px: 1,
-									color: 'text.primary',
+									px: 3,
+									borderRadius: '50px',
+									boxShadow: 'none',
 									'&:hover': {
-										backgroundColor: 'rgba(0,0,0,0.05)',
+										boxShadow: '0 4px 12px rgba(220,38,38,0.2)',
+										backgroundColor: 'secondary.dark',
 									},
 								}}
 							>
-								<CalendarTodayIcon sx={{ mr: 1 }} />
-								Book Appointment
+								Logout
 							</Button>
-						)}
-						<Button
-							color="primary"
-							onClick={() => handleNavigation('/profile')}
-							sx={{
-								fontWeight: 500,
-								px: 1,
-								color: 'text.primary',
-								'&:hover': {
-									backgroundColor: 'rgba(0,0,0,0.05)',
-								},
-							}}
-						>
-							<AccountCircleIcon sx={{ mr: 1 }} />
-							Profile
-						</Button>
-					</Box>
-					<Button
-						color="secondary"
-						variant="contained"
-						onClick={handleLogout}
-						sx={{
-							fontWeight: 500,
-							px: 3,
-							borderRadius: '50px',
-							boxShadow: 'none',
-							'&:hover': {
-								boxShadow: '0 4px 12px rgba(220,38,38,0.2)',
-								backgroundColor: 'secondary.dark',
-							},
-						}}
-					>
-						Logout
-					</Button>
-					<BookingModal open={openBooking} onClose={handleCloseBooking} />
-				</>
-			) : (
-				<>
-					<Button
-						color="secondary"
-						variant="contained"
-						onClick={() => handleNavigation('/login')}
-						sx={{
-							fontWeight: 500,
-							px: 1,
-							ml: { xs: 1, md: 2 },
-							borderRadius: '50px',
-							boxShadow: 'none',
-							'&:hover': {
-								boxShadow: '0 4px 12px rgba(220,38,38,0.2)',
-								backgroundColor: 'secondary.dark',
-							},
-						}}
-					>
-						Login
-					</Button>
-				</>
+						</>
+					) : (
+						<>
+							<Button
+								color="secondary"
+								variant="contained"
+								onClick={() => handleNavigation('/login')}
+								sx={{
+									fontWeight: 500,
+									px: 1,
+									ml: { xs: 1, md: 2 },
+									borderRadius: '50px',
+									boxShadow: 'none',
+									'&:hover': {
+										boxShadow: '0 4px 12px rgba(220,38,38,0.2)',
+										backgroundColor: 'secondary.dark',
+									},
+								}}
+							>
+								Login
+							</Button>
+						</>
+					)}
+				</Box>
 			)}
-		</Box>
+
+			<BookingModal
+				open={openBooking}
+				onClose={handleCloseBooking}
+				initialCategory=""
+				initialService=""
+			/>
+		</>
 	);
 }
 

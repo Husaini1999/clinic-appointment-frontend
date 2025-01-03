@@ -30,6 +30,8 @@ function ProfileSettings() {
 		name: '',
 		email: '',
 		phone: '',
+		weight: '',
+		height: '',
 	});
 
 	const [passwordData, setPasswordData] = useState({
@@ -75,6 +77,8 @@ function ProfileSettings() {
 					name: data.name || '',
 					email: data.email || '',
 					phone: data.phone || '',
+					weight: data.weight || '',
+					height: data.height || '',
 				});
 			}
 		} catch (error) {
@@ -92,11 +96,24 @@ function ProfileSettings() {
 		// Remove spaces from phone number before validation and submission
 		const cleanPhone = userData.phone.replace(/\s+/g, '');
 
+		// Validate phone
 		if (!cleanPhone || !isValidPhoneNumber(cleanPhone)) {
 			setPhoneError('Please enter a valid phone number');
 			showMessage('Please enter a valid phone number', 'error');
 			return;
 		}
+
+		// Validate weight and height
+		if (userData.weight && userData.weight < 0) {
+			showMessage('Weight cannot be negative', 'error');
+			return;
+		}
+
+		if (userData.height && userData.height < 0) {
+			showMessage('Height cannot be negative', 'error');
+			return;
+		}
+
 		setPhoneError('');
 		setLoading(true);
 
@@ -107,10 +124,11 @@ function ProfileSettings() {
 					'Content-Type': 'application/json',
 					Authorization: `Bearer ${localStorage.getItem('token')}`,
 				},
-				// Send cleaned phone number to backend
 				body: JSON.stringify({
 					...userData,
 					phone: cleanPhone,
+					...(userData.weight && { weight: Number(userData.weight) }),
+					...(userData.height && { height: Number(userData.height) }),
 				}),
 			});
 
@@ -121,7 +139,13 @@ function ProfileSettings() {
 				const user = JSON.parse(localStorage.getItem('user'));
 				localStorage.setItem(
 					'user',
-					JSON.stringify({ ...user, ...userData, phone: cleanPhone })
+					JSON.stringify({
+						...user,
+						...userData,
+						phone: cleanPhone,
+						weight: userData.weight,
+						height: userData.height,
+					})
 				);
 			} else {
 				showMessage(data.message || 'Error updating profile', 'error');
@@ -275,6 +299,42 @@ function ProfileSettings() {
 								disabled={loading}
 								required
 								placeholder="+60123456789"
+							/>
+						</Grid>
+						<Grid item xs={12} sm={6}>
+							<TextField
+								fullWidth
+								label="Weight"
+								type="number"
+								value={userData.weight}
+								onChange={(e) =>
+									setUserData({ ...userData, weight: e.target.value })
+								}
+								InputProps={{
+									endAdornment: (
+										<InputAdornment position="end">kg</InputAdornment>
+									),
+								}}
+								placeholder="Optional"
+								disabled={loading}
+							/>
+						</Grid>
+						<Grid item xs={12} sm={6}>
+							<TextField
+								fullWidth
+								label="Height"
+								type="number"
+								value={userData.height}
+								onChange={(e) =>
+									setUserData({ ...userData, height: e.target.value })
+								}
+								InputProps={{
+									endAdornment: (
+										<InputAdornment position="end">cm</InputAdornment>
+									),
+								}}
+								placeholder="Optional"
+								disabled={loading}
 							/>
 						</Grid>
 						<Grid item xs={12}>
