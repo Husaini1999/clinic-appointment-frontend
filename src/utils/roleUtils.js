@@ -13,6 +13,14 @@ export const canChangeUserRole = (role) => {
 	return isAdmin(role);
 };
 
+export const canRescheduleAppointments = (role) => {
+	return ['admin', 'staff', 'patient'].includes(role?.toLowerCase());
+};
+
+export const canMarkNoShow = (role) => {
+	return ['admin', 'staff'].includes(role?.toLowerCase());
+};
+
 export const canCancelAppointments = (role) => {
-	return isAdmin(role);
+	return ['admin', 'staff'].includes(role?.toLowerCase());
 };

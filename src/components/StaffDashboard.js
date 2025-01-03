@@ -12,8 +12,8 @@ import {
 } from '@mui/material';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
 import PeopleIcon from '@mui/icons-material/People';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 import AppointmentManagement from './AppointmentManagement';
 import UserManagement from './UserManagement';
 import { canViewAnalytics } from '../utils/roleUtils';
@@ -32,8 +32,8 @@ function StaffDashboard() {
 	const [appointments, setAppointments] = useState([]);
 	const [stats, setStats] = useState({
 		pending: 0,
-		approved: 0,
-		rejected: 0,
+		completed: 0,
+		no_show: 0,
 		totalPatients: 0,
 	});
 
@@ -56,15 +56,21 @@ function StaffDashboard() {
 
 				setStats({
 					pending: sortedData.filter((apt) => apt.status === 'pending').length,
-					approved: sortedData.filter((apt) => apt.status === 'approved')
-						.length,
-					rejected: sortedData.filter((apt) => apt.status === 'rejected')
-						.length,
+					completed:
+						sortedData.filter((apt) => apt.status === 'completed').length || 0,
+					no_show:
+						sortedData.filter((apt) => apt.status === 'no_show').length || 0,
 					totalPatients: new Set(sortedData.map((apt) => apt.email)).size,
 				});
 			}
 		} catch (error) {
 			console.error('Error fetching appointments:', error);
+			setStats({
+				pending: 0,
+				completed: 0,
+				no_show: 0,
+				totalPatients: 0,
+			});
 		}
 	}, []);
 
@@ -111,17 +117,17 @@ function StaffDashboard() {
 					</Grid>
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
-							title="Approved Appointments"
-							value={stats.approved}
+							title="Completed Appointments"
+							value={stats.completed}
 							icon={<CheckCircleIcon sx={{ fontSize: 40 }} />}
 							color="success.main"
 						/>
 					</Grid>
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
-							title="Rejected Appointments"
-							value={stats.rejected}
-							icon={<CancelIcon sx={{ fontSize: 40 }} />}
+							title="No Show Appointments"
+							value={stats.no_show}
+							icon={<PersonOffIcon sx={{ fontSize: 40 }} />}
 							color="error.main"
 						/>
 					</Grid>

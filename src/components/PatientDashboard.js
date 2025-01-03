@@ -30,6 +30,14 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
 import config from '../config';
 
+const statusDisplayNames = {
+	all: 'All',
+	pending: 'Pending',
+	completed: 'Completed',
+	no_show: 'No Show',
+	cancelled: 'Cancelled',
+};
+
 const CancelModal = React.memo(
 	({ open, onClose, onCancel, appointmentId, notes, onNotesChange }) => (
 		<Dialog open={open} onClose={onClose}>
@@ -161,11 +169,11 @@ function Dashboard() {
 
 	const getStatusColor = (status) => {
 		switch (status) {
-			case 'approved':
+			case 'completed':
 				return 'success';
 			case 'pending':
 				return 'warning';
-			case 'rejected':
+			case 'no_show':
 				return 'error';
 			case 'cancelled':
 				return 'default';
@@ -245,7 +253,7 @@ function Dashboard() {
 		(appointment) => new Date(appointment.appointmentTime) < today
 	);
 
-	const statusOptions = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
+	const statusOptions = ['all', 'pending', 'completed', 'no_show', 'cancelled'];
 
 	const filterAppointmentsByStatus = (appointments) => {
 		if (statusFilter === 'all') return appointments;
@@ -371,7 +379,7 @@ function Dashboard() {
 					{statusOptions.map((status) => (
 						<Chip
 							key={status}
-							label={status.charAt(0).toUpperCase() + status.slice(1)}
+							label={statusDisplayNames[status]}
 							onClick={() => setStatusFilter(status)}
 							color={statusFilter === status ? 'primary' : 'default'}
 							sx={{
@@ -430,7 +438,7 @@ function Dashboard() {
 									</TableCell>
 									<TableCell align="center">
 										<Chip
-											label={appointment.status}
+											label={statusDisplayNames[appointment.status]}
 											color={getStatusColor(appointment.status)}
 											sx={{
 												fontWeight: 'medium',
@@ -563,7 +571,7 @@ function Dashboard() {
 									</TableCell>
 									<TableCell align="center">
 										<Chip
-											label={appointment.status}
+											label={statusDisplayNames[appointment.status]}
 											color={getStatusColor(appointment.status)}
 											sx={{
 												fontWeight: 'medium',

@@ -26,9 +26,12 @@ import {
 	TablePagination,
 	IconButton,
 	Tooltip,
+	Snackbar,
+	Alert,
 } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import BlockIcon from '@mui/icons-material/Block';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import CancelIcon from '@mui/icons-material/Cancel';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -40,76 +43,18 @@ import { enhancedTableStyles } from './styles/tableStyles';
 import NotesHistory from './NotesHistory';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
 import config from '../config';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-// Separate Approve Modal Component
-const ApproveModal = React.memo(
-	({ open, onClose, onApprove, appointmentId, notes, onNotesChange }) => (
-		<Dialog open={open} onClose={onClose}>
-			<DialogTitle>Approve Appointment</DialogTitle>
-			<DialogContent>
-				<Typography variant="body2" sx={{ mb: 2 }}>
-					Are you sure you want to approve this appointment?
-				</Typography>
-				<TextField
-					fullWidth
-					multiline
-					rows={4}
-					label="Notes (Optional)"
-					value={notes}
-					onChange={onNotesChange}
-					margin="normal"
-				/>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancel</Button>
-				<Button
-					onClick={() => onApprove(appointmentId, 'approved')}
-					color="success"
-					variant="contained"
-				>
-					Approve
-				</Button>
-			</DialogActions>
-		</Dialog>
-	)
-);
+const statusDisplayNames = {
+	all: 'All',
+	pending: 'Pending',
+	completed: 'Completed',
+	no_show: 'No Show',
+	cancelled: 'Cancelled',
+};
 
-// Separate Reject Modal Component
-const RejectModal = React.memo(
-	({ open, onClose, onReject, appointmentId, notes, onNotesChange }) => (
-		<Dialog open={open} onClose={onClose}>
-			<DialogTitle>Reject Appointment</DialogTitle>
-			<DialogContent>
-				<Typography variant="body2" sx={{ mb: 2 }}>
-					Are you sure you want to reject this appointment?
-				</Typography>
-				<TextField
-					fullWidth
-					multiline
-					rows={4}
-					label="Reason for Rejection (Required)"
-					value={notes}
-					onChange={onNotesChange}
-					margin="normal"
-					required
-				/>
-			</DialogContent>
-			<DialogActions>
-				<Button onClick={onClose}>Cancel</Button>
-				<Button
-					onClick={() => onReject(appointmentId, 'rejected')}
-					color="error"
-					variant="contained"
-					disabled={!notes.trim()}
-				>
-					Reject
-				</Button>
-			</DialogActions>
-		</Dialog>
-	)
-);
-
-// Add this after the RejectModal component
 const CancelModal = React.memo(
 	({ open, onClose, onCancel, appointmentId, notes, onNotesChange }) => (
 		<Dialog open={open} onClose={onClose}>
@@ -138,6 +83,117 @@ const CancelModal = React.memo(
 					disabled={!notes.trim()}
 				>
 					Cancel Appointment
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+);
+
+// Add new RescheduleModal component
+const RescheduleModal = React.memo(
+	({
+		open,
+		onClose,
+		onReschedule,
+		appointmentId,
+		notes,
+		onNotesChange,
+		currentDateTime,
+	}) => (
+		<Dialog open={open} onClose={onClose}>
+			<DialogTitle>Reschedule Appointment</DialogTitle>
+			<DialogContent>
+				<Typography variant="body2" sx={{ mb: 2 }}>
+					Please select a new date and time for this appointment.
+				</Typography>
+				<LocalizationProvider dateAdapter={AdapterDateFns}>
+					<DateTimePicker
+						label="New Appointment Time"
+						value={notes.newDateTime || null}
+						onChange={(newValue) => {
+							onNotesChange({
+								target: {
+									value: {
+										...notes,
+										newDateTime: newValue,
+									},
+								},
+							});
+						}}
+						minDate={new Date()}
+						shouldDisableDate={(date) => {
+							const day = date.getDay();
+							return day === 0 || day === 6;
+						}}
+						shouldDisableTime={(time, type) => {
+							const hours = time.getHours();
+							return hours < 9 || hours >= 17;
+						}}
+						sx={{ width: '100%', mt: 2 }}
+					/>
+				</LocalizationProvider>
+				<TextField
+					fullWidth
+					multiline
+					rows={4}
+					label="Reason for Rescheduling (Required)"
+					value={notes.reason || ''}
+					onChange={(e) =>
+						onNotesChange({
+							target: {
+								value: {
+									...notes,
+									reason: e.target.value,
+								},
+							},
+						})
+					}
+					margin="normal"
+					required
+				/>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose}>Cancel</Button>
+				<Button
+					onClick={() => onReschedule(appointmentId, 'reschedule')}
+					color="primary"
+					variant="contained"
+					disabled={!notes.reason?.trim() || !notes.newDateTime}
+				>
+					Reschedule
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+);
+
+// Add NoShowModal component
+const NoShowModal = React.memo(
+	({ open, onClose, onMarkNoShow, appointmentId, notes, onNotesChange }) => (
+		<Dialog open={open} onClose={onClose}>
+			<DialogTitle>Mark as No Show</DialogTitle>
+			<DialogContent>
+				<Typography variant="body2" sx={{ mb: 2 }}>
+					Are you sure you want to mark this appointment as a no-show?
+				</Typography>
+				<TextField
+					fullWidth
+					multiline
+					rows={4}
+					label="Additional Notes (Optional)"
+					value={notes}
+					onChange={onNotesChange}
+					margin="normal"
+				/>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose}>Cancel</Button>
+				<Button
+					onClick={() => onMarkNoShow(appointmentId, 'no_show')}
+					color="error"
+					variant="contained"
+				>
+					Confirm No-Show
 				</Button>
 			</DialogActions>
 		</Dialog>
@@ -204,14 +260,49 @@ const CollapsibleNotesCell = ({ notes }) => {
 	);
 };
 
+const CompleteModal = React.memo(
+	({ open, onClose, onMarkComplete, appointmentId, notes, onNotesChange }) => (
+		<Dialog open={open} onClose={onClose}>
+			<DialogTitle>Mark as Completed</DialogTitle>
+			<DialogContent>
+				<Typography variant="body2" sx={{ mb: 2 }}>
+					Are you sure you want to mark this appointment as completed?
+				</Typography>
+				<TextField
+					fullWidth
+					multiline
+					rows={4}
+					label="Additional Notes (Optional)"
+					value={notes}
+					onChange={onNotesChange}
+					margin="normal"
+				/>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose}>Cancel</Button>
+				<Button
+					onClick={() => onMarkComplete(appointmentId, 'completed')}
+					color="success"
+					variant="contained"
+				>
+					Mark as Complete
+				</Button>
+			</DialogActions>
+		</Dialog>
+	)
+);
+
 function AppointmentManagement({ appointments, onRefresh }) {
 	const [selectedAppointment, setSelectedAppointment] = useState(null);
-	const [approveNotes, setApproveNotes] = useState('');
-	const [rejectNotes, setRejectNotes] = useState('');
 	const [cancelNotes, setCancelNotes] = useState('');
-	const [approveModalOpen, setApproveModalOpen] = useState(false);
-	const [rejectModalOpen, setRejectModalOpen] = useState(false);
+	const [rescheduleNotes, setRescheduleNotes] = useState({
+		reason: '',
+		newDateTime: null,
+	});
+	const [noShowNotes, setNoShowNotes] = useState('');
 	const [cancelModalOpen, setCancelModalOpen] = useState(false);
+	const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+	const [noShowModalOpen, setNoShowModalOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [treatmentFilter, setTreatmentFilter] = useState('all');
@@ -221,6 +312,13 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	const [rowsPerPage, setRowsPerPage] = useState(5);
 	const user = JSON.parse(localStorage.getItem('user'));
 	const canCancel = canCancelAppointments(user.role);
+	const [snackbar, setSnackbar] = useState({
+		open: false,
+		message: '',
+		severity: 'success',
+	});
+	const [completeModalOpen, setCompleteModalOpen] = useState(false);
+	const [completeNotes, setCompleteNotes] = useState('');
 
 	// Get unique treatments from appointments
 	const treatments = [
@@ -229,7 +327,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	];
 
 	// Get all possible statuses
-	const statuses = ['all', 'pending', 'approved', 'rejected', 'cancelled'];
+	const statuses = ['all', 'pending', 'completed', 'no_show', 'cancelled'];
 
 	// Enhanced filter logic
 	const filteredAppointments = appointments.filter((apt) => {
@@ -246,6 +344,36 @@ function AppointmentManagement({ appointments, onRefresh }) {
 
 	const handleStatusUpdate = async (appointmentId, newStatus) => {
 		try {
+			// If it's a reschedule action, use a different endpoint
+			if (newStatus === 'reschedule') {
+				const response = await fetch(
+					`${config.apiUrl}/api/appointments/${appointmentId}/reschedule`,
+					{
+						method: 'PUT',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${localStorage.getItem('token')}`,
+						},
+						body: JSON.stringify({
+							newDateTime: rescheduleNotes.newDateTime,
+							reason: rescheduleNotes.reason,
+						}),
+					}
+				);
+
+				if (response.ok) {
+					setSnackbar({
+						open: true,
+						message: 'Appointment rescheduled successfully',
+						severity: 'success',
+					});
+					onRefresh();
+					handleCloseModals();
+				}
+				return;
+			}
+
+			// For other status updates (no-show, cancel)
 			const response = await fetch(
 				`${config.apiUrl}/api/appointments/${appointmentId}/status`,
 				{
@@ -256,42 +384,49 @@ function AppointmentManagement({ appointments, onRefresh }) {
 					},
 					body: JSON.stringify({
 						status: newStatus,
-						notes:
-							newStatus === 'approved'
-								? approveNotes
-								: newStatus === 'rejected'
-								? rejectNotes
-								: cancelNotes,
+						notes: newStatus === 'no_show' ? noShowNotes : cancelNotes,
 					}),
 				}
 			);
 
 			if (response.ok) {
+				setSnackbar({
+					open: true,
+					message: `Appointment marked as ${statusDisplayNames[newStatus]} successfully`,
+					severity: 'success',
+				});
 				onRefresh();
 				handleCloseModals();
 			}
 		} catch (error) {
-			console.error('Error updating appointment status:', error);
+			console.error('Error updating appointment:', error);
+			setSnackbar({
+				open: true,
+				message: 'Error updating appointment',
+				severity: 'error',
+			});
 		}
 	};
 
 	const handleCloseModals = () => {
-		setApproveModalOpen(false);
-		setRejectModalOpen(false);
 		setCancelModalOpen(false);
+		setRescheduleModalOpen(false);
+		setNoShowModalOpen(false);
+		setCompleteModalOpen(false);
 		setSelectedAppointment(null);
-		setApproveNotes('');
-		setRejectNotes('');
 		setCancelNotes('');
+		setRescheduleNotes({ reason: '', newDateTime: null });
+		setNoShowNotes('');
+		setCompleteNotes('');
 	};
 
 	const getStatusColor = (status) => {
 		switch (status) {
-			case 'approved':
+			case 'completed':
 				return 'success';
 			case 'pending':
 				return 'warning';
-			case 'rejected':
+			case 'no_show':
 				return 'error';
 			case 'cancelled':
 				return 'default';
@@ -465,6 +600,11 @@ function AppointmentManagement({ appointments, onRefresh }) {
 		},
 	};
 
+	// Add handler to close snackbar
+	const handleCloseSnackbar = () => {
+		setSnackbar((prev) => ({ ...prev, open: false }));
+	};
+
 	return (
 		<Box sx={{ width: '100%', overflow: 'hidden' }}>
 			{/* Search and Filter Section */}
@@ -515,7 +655,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 								<MenuItem key={status} value={status}>
 									{status === 'all'
 										? 'All Statuses'
-										: status.charAt(0).toUpperCase() + status.slice(1)}
+										: statusDisplayNames[status]}
 								</MenuItem>
 							))}
 						</Select>
@@ -775,10 +915,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 									}}
 								>
 									<Chip
-										label={
-											appointment.status.charAt(0).toUpperCase() +
-											appointment.status.slice(1)
-										}
+										label={statusDisplayNames[appointment.status]}
 										color={getStatusColor(appointment.status)}
 										size="small"
 										sx={{
@@ -808,73 +945,87 @@ function AppointmentManagement({ appointments, onRefresh }) {
 										textAlign: 'center',
 										verticalAlign: 'middle',
 										width: {
-											xs: '80px',
-											sm: '12%',
+											xs: '120px',
+											sm: '160px',
+										},
+										minWidth: {
+											xs: '120px',
+											sm: '160px',
 										},
 									}}
 								>
-									{appointment.status === 'pending' && (
-										<Box
-											sx={{
-												display: 'inline-flex',
-												justifyContent: 'center',
-												gap: {
-													xs: 0.5,
-													sm: 1,
-												},
-												'& .MuiIconButton-root': {
-													padding: {
-														xs: '2px',
-														sm: '4px',
+									{appointment.status !== 'cancelled' &&
+										appointment.status !== 'no_show' &&
+										appointment.status !== 'completed' && (
+											<Box
+												sx={{
+													display: 'inline-flex',
+													flexWrap: 'wrap',
+													justifyContent: 'center',
+													gap: { xs: 0.5, sm: 1 },
+													'& .MuiIconButton-root': {
+														padding: { xs: '2px', sm: '4px' },
 													},
-												},
-												'& .MuiSvgIcon-root': {
-													fontSize: {
-														xs: '1rem',
-														sm: '1.25rem',
+													'& .MuiSvgIcon-root': {
+														fontSize: { xs: '1rem', sm: '1.25rem' },
 													},
-												},
-											}}
-										>
-											<Tooltip title="Approve" arrow>
-												<IconButton
-													size="small"
-													color="success"
-													onClick={() => {
-														setSelectedAppointment(appointment);
-														setApproveModalOpen(true);
-													}}
-												>
-													<CheckCircleIcon />
-												</IconButton>
-											</Tooltip>
+												}}
+											>
+												{appointment.status === 'pending' && (
+													<>
+														<Tooltip title="Mark as Complete" arrow>
+															<IconButton
+																size="small"
+																color="success"
+																onClick={() => {
+																	setSelectedAppointment(appointment);
+																	setCompleteModalOpen(true);
+																}}
+															>
+																<CheckCircleIcon />
+															</IconButton>
+														</Tooltip>
+														<Tooltip title="Reschedule" arrow>
+															<IconButton
+																size="small"
+																color="primary"
+																onClick={() => {
+																	setSelectedAppointment(appointment);
+																	setRescheduleModalOpen(true);
+																}}
+															>
+																<EventRepeatIcon />
+															</IconButton>
+														</Tooltip>
+													</>
+												)}
 
-											<Tooltip title="Reject" arrow>
-												<IconButton
-													size="small"
-													color="error"
-													onClick={() => {
-														setSelectedAppointment(appointment);
-														setRejectModalOpen(true);
-													}}
-												>
-													<BlockIcon />
-												</IconButton>
-											</Tooltip>
-
-											{canCancel && (
-												<Tooltip title="Cancel" arrow>
+												<Tooltip title="Mark as No-Show" arrow>
 													<IconButton
 														size="small"
-														color="warning"
-														onClick={() => handleCancel(appointment)}
+														color="error"
+														onClick={() => {
+															setSelectedAppointment(appointment);
+															setNoShowModalOpen(true);
+														}}
 													>
-														<CancelIcon />
+														<PersonOffIcon />
 													</IconButton>
 												</Tooltip>
-											)}
-										</Box>
-									)}
+
+												{canCancel && (
+													<Tooltip title="Cancel" arrow>
+														<IconButton
+															size="small"
+															color="error"
+															onClick={() => handleCancel(appointment)}
+														>
+															<CancelIcon />
+														</IconButton>
+													</Tooltip>
+												)}
+											</Box>
+										)}
 								</TableCell>
 							</TableRow>
 						))}
@@ -917,24 +1068,6 @@ function AppointmentManagement({ appointments, onRefresh }) {
 				}}
 			/>
 
-			<ApproveModal
-				open={approveModalOpen}
-				onClose={handleCloseModals}
-				onApprove={handleStatusUpdate}
-				appointmentId={selectedAppointment?._id}
-				notes={approveNotes}
-				onNotesChange={(e) => setApproveNotes(e.target.value)}
-			/>
-
-			<RejectModal
-				open={rejectModalOpen}
-				onClose={handleCloseModals}
-				onReject={handleStatusUpdate}
-				appointmentId={selectedAppointment?._id}
-				notes={rejectNotes}
-				onNotesChange={(e) => setRejectNotes(e.target.value)}
-			/>
-
 			<CancelModal
 				open={cancelModalOpen}
 				onClose={handleCloseModals}
@@ -943,6 +1076,61 @@ function AppointmentManagement({ appointments, onRefresh }) {
 				notes={cancelNotes}
 				onNotesChange={(e) => setCancelNotes(e.target.value)}
 			/>
+
+			<RescheduleModal
+				open={rescheduleModalOpen}
+				onClose={handleCloseModals}
+				onReschedule={handleStatusUpdate}
+				appointmentId={selectedAppointment?._id}
+				notes={rescheduleNotes}
+				onNotesChange={(e) => setRescheduleNotes(e.target.value)}
+				currentDateTime={selectedAppointment?.appointmentTime}
+			/>
+
+			<NoShowModal
+				open={noShowModalOpen}
+				onClose={handleCloseModals}
+				onMarkNoShow={handleStatusUpdate}
+				appointmentId={selectedAppointment?._id}
+				notes={noShowNotes}
+				onNotesChange={(e) => setNoShowNotes(e.target.value)}
+			/>
+
+			<CompleteModal
+				open={completeModalOpen}
+				onClose={handleCloseModals}
+				onMarkComplete={handleStatusUpdate}
+				appointmentId={selectedAppointment?._id}
+				notes={completeNotes}
+				onNotesChange={(e) => setCompleteNotes(e.target.value)}
+			/>
+
+			{/* Update Snackbar */}
+			<Snackbar
+				open={snackbar.open}
+				autoHideDuration={4000}
+				onClose={handleCloseSnackbar}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+				sx={{
+					bottom: { xs: 24, sm: 32 },
+				}}
+			>
+				<Alert
+					onClose={handleCloseSnackbar}
+					severity={snackbar.severity}
+					sx={{
+						width: { xs: '90%', sm: '400px' },
+						fontSize: { xs: '0.9rem', sm: '1rem' },
+						'& .MuiAlert-icon': {
+							fontSize: { xs: '1.5rem', sm: '2rem' },
+						},
+						boxShadow: 3,
+						padding: { xs: '12px 16px', sm: '16px 24px' },
+					}}
+				>
+					{snackbar.message}
+				</Alert>
+			</Snackbar>
 		</Box>
 	);
 }

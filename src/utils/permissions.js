@@ -3,9 +3,9 @@ const PERMISSIONS = {
 		users: ['view_all', 'create', 'edit', 'delete', 'change_role'],
 		appointments: [
 			'view_all',
-			'approve',
-			'reject',
+			'reschedule',
 			'cancel',
+			'mark_no_show',
 			'add_notes',
 			'view_analytics',
 		],
@@ -13,12 +13,18 @@ const PERMISSIONS = {
 	},
 	STAFF: {
 		users: ['view_patients'],
-		appointments: ['view_all', 'approve', 'reject', 'add_notes'],
+		appointments: [
+			'view_all',
+			'reschedule',
+			'cancel',
+			'mark_no_show',
+			'add_notes',
+		],
 		system: ['view_treatments'],
 	},
 	PATIENT: {
 		users: ['view_self', 'edit_self'],
-		appointments: ['view_own', 'create', 'cancel_own', 'add_notes'],
+		appointments: ['view_own', 'create', 'reschedule_own', 'add_notes'],
 	},
 };
 

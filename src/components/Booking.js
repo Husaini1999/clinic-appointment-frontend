@@ -97,6 +97,7 @@ function BookingModal({ open, onClose }) {
 
 	const handleBack = () => {
 		setActiveStep((prevStep) => prevStep - 1);
+		setError('');
 	};
 
 	const isWeekday = (date) => {
