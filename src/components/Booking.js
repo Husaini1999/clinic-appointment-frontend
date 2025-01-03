@@ -139,12 +139,12 @@ function BookingModal({ open, onClose }) {
 		for (let hour = startHour; hour <= endHour; hour++) {
 			for (let minute = 0; minute < 60; minute += interval) {
 				if (hour === endHour && minute > 0) break;
-				slots.push(
-					format(set(new Date(), { hours: hour, minutes: minute }), 'hh:mm a')
-				);
+
+				const date = new Date();
+				date.setHours(hour, minute, 0, 0);
+				slots.push(format(date, 'p')); // Using 'p' format for consistent 12-hour time
 			}
 		}
-		console.log(slots);
 		return slots;
 	};
 
@@ -403,18 +403,29 @@ function BookingModal({ open, onClose }) {
 										size="small"
 										variant={
 											formData.appointmentTime &&
-											format(formData.appointmentTime, 'hh:mm a') === slot
+											format(formData.appointmentTime, 'p') === slot
 												? 'contained'
 												: 'outlined'
 										}
 										color="primary"
 										onClick={() => {
-											console.log(formData.appointmentTime);
 											if (formData.appointmentTime) {
+												const [time, period] = slot.split(' ');
+												const [hours, minutes] = time.split(':');
+												let hour = parseInt(hours);
+
+												// Convert to 24-hour format for setting
+												if (period === 'PM' && hour !== 12) {
+													hour += 12;
+												} else if (period === 'AM' && hour === 12) {
+													hour = 0;
+												}
+
 												const newDate = set(formData.appointmentTime, {
-													hours: parseInt(slot.split(':')[0]),
-													minutes: parseInt(slot.split(':')[1]),
+													hours: hour,
+													minutes: parseInt(minutes),
 												});
+
 												setFormData({
 													...formData,
 													appointmentTime: newDate,
