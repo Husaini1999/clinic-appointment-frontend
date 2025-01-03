@@ -11,23 +11,16 @@ import {
 	TextField,
 	InputAdornment,
 } from '@mui/material';
-import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import HealingIcon from '@mui/icons-material/Healing';
-import ChildCareIcon from '@mui/icons-material/ChildCare';
-import ElderlyIcon from '@mui/icons-material/Elderly';
-import VaccinesIcon from '@mui/icons-material/Vaccines';
 import BookingModal from './Booking';
 import Chatbot from './Chatbot';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import config from '../config';
 import { motion } from 'framer-motion';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
 
 function Homepage() {
 	const location = useLocation();

@@ -78,16 +78,6 @@ function ServiceManagement() {
 		category: '',
 	});
 
-	const filterServicesBySearch = (services, query) => {
-		if (!query) return null;
-		const lowerQuery = query.toLowerCase();
-		return services.filter(
-			(service) =>
-				service?.name?.toLowerCase().includes(lowerQuery) ||
-				service?.description?.toLowerCase().includes(lowerQuery)
-		);
-	};
-
 	const handleSearch = (e) => {
 		const query = e.target.value;
 		setSearchQuery(query);
@@ -189,10 +179,6 @@ function ServiceManagement() {
 
 	const handleDeleteCategory = (category) => {
 		handleDeleteClick(category._id, 'category', category.name);
-	};
-
-	const handleDeleteService = (service) => {
-		handleDeleteClick(service._id, 'service', service.name);
 	};
 
 	const handleDeleteClick = (id, type, name) => {
@@ -605,32 +591,78 @@ function ServiceManagement() {
 								setExpandedCategories(newExpanded);
 							}}
 						>
-							<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+							<AccordionSummary
+								expandIcon={<ExpandMoreIcon />}
+								sx={{
+									'& .MuiAccordionSummary-content': {
+										display: 'flex',
+										justifyContent: 'space-between',
+										alignItems: 'center',
+									},
+								}}
+							>
 								<Box
-									sx={{ display: 'flex', alignItems: 'center', width: '100%' }}
+									sx={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: 2,
+									}}
 								>
-									{category.image?.data && (
-										<Box
-											sx={{
-												width: 40,
-												height: 40,
-												mr: 2,
-												borderRadius: 1,
-												overflow: 'hidden',
+									{/* Category Image */}
+									<Box
+										sx={{
+											width: 40,
+											height: 40,
+											borderRadius: 1,
+											overflow: 'hidden',
+											flexShrink: 0,
+											bgcolor: 'grey.100',
+										}}
+									>
+										<img
+											src={category.image?.data || '/placeholder-image.jpg'}
+											alt={category.name}
+											style={{
+												width: '100%',
+												height: '100%',
+												objectFit: 'cover',
 											}}
-										>
-											<img
-												src={category.image.data}
-												alt={category.name}
-												style={{
-													width: '100%',
-													height: '100%',
-													objectFit: 'cover',
-												}}
-											/>
-										</Box>
-									)}
+										/>
+									</Box>
+									{/* Category Name */}
 									<Typography variant="h6">{category.name}</Typography>
+								</Box>
+
+								{/* Action Buttons */}
+								<Box
+									sx={{
+										display: 'flex',
+										gap: 1,
+										'& button': {
+											'&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.04)' },
+										},
+									}}
+								>
+									<IconButton
+										size="small"
+										onClick={(e) => {
+											e.stopPropagation();
+											handleEditCategory(category);
+										}}
+										sx={{ color: 'primary.main' }}
+									>
+										<EditIcon fontSize="small" />
+									</IconButton>
+									<IconButton
+										size="small"
+										onClick={(e) => {
+											e.stopPropagation();
+											handleDeleteCategory(category);
+										}}
+										sx={{ color: 'error.main' }}
+									>
+										<DeleteIcon fontSize="small" />
+									</IconButton>
 								</Box>
 							</AccordionSummary>
 							<AccordionDetails>

@@ -11,6 +11,7 @@ import {
 	IconButton,
 	Button,
 	Modal,
+	Alert,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
@@ -82,6 +83,39 @@ function CategoryServices() {
 		return (
 			<Container>
 				<Typography>Loading...</Typography>
+			</Container>
+		);
+	}
+
+	if (error) {
+		return (
+			<Container maxWidth="lg" sx={{ py: 4 }}>
+				<Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
+					<IconButton onClick={() => navigate(-1)} sx={{ mr: 2 }}>
+						<ArrowBackIcon />
+					</IconButton>
+					<Typography variant="h4" component="h1">
+						Error
+					</Typography>
+				</Box>
+				<Alert
+					severity="error"
+					sx={{
+						mt: 2,
+						'& .MuiAlert-message': {
+							fontSize: '1rem',
+						},
+					}}
+				>
+					{error}
+				</Alert>
+				<Button
+					variant="contained"
+					onClick={() => window.location.reload()}
+					sx={{ mt: 2 }}
+				>
+					Try Again
+				</Button>
 			</Container>
 		);
 	}
