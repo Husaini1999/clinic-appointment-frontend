@@ -561,8 +561,12 @@ function Dashboard() {
 						{paginatedUpcomingAppointments.length > 0 ? (
 							paginatedUpcomingAppointments.map((appointment, index) => (
 								<TableRow key={appointment._id}>
-									<TableCell>{index + 1}</TableCell>
-									<TableCell align="center">{appointment.treatment}</TableCell>
+									<TableCell>
+										{upcomingPage * rowsPerPage + index + 1}
+									</TableCell>
+									<TableCell align="center">
+										{appointment.treatment?.name || 'N/A'}
+									</TableCell>
 									<TableCell align="center">
 										{format(new Date(appointment.appointmentTime), 'PP')}
 										<br />
@@ -717,8 +721,10 @@ function Dashboard() {
 						{paginatedPastAppointments.length > 0 ? (
 							paginatedPastAppointments.map((appointment, index) => (
 								<TableRow key={appointment._id}>
-									<TableCell>{index + 1}</TableCell>
-									<TableCell align="center">{appointment.treatment}</TableCell>
+									<TableCell>{pastPage * rowsPerPage + index + 1}</TableCell>
+									<TableCell align="center">
+										{appointment.treatment?.name || 'N/A'}
+									</TableCell>
 									<TableCell align="center">
 										{format(new Date(appointment.appointmentTime), 'PP')}
 										<br />
