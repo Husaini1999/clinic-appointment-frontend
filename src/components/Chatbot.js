@@ -362,19 +362,27 @@ const Chatbot = () => {
 				);
 			case 'userConfirmation':
 				return (
-					<Box sx={{ display: 'flex', gap: 1 }}>
+					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						<Typography
+							variant="body2"
+							color="text.secondary"
+							sx={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: 0.5,
+								mb: 1,
+							}}
+						>
+							<InfoIcon sx={{ fontSize: 16 }} />
+							To update your personal information, please visit Profile Settings
+							in the main menu.
+						</Typography>
 						<Button
 							variant="contained"
 							onClick={() => onAction('userDetailsConfirm', true)}
 							color="primary"
 						>
-							Yes, details are correct
-						</Button>
-						<Button
-							variant="outlined"
-							onClick={() => onAction('userDetailsConfirm', false)}
-						>
-							No, update details
+							Confirm and Continue
 						</Button>
 					</Box>
 				);
@@ -776,9 +784,30 @@ const Chatbot = () => {
 				break;
 
 			case 'updateDateTime':
-				if (data.date) {
+				// Handle "Choose Different Date" button click
+				if (data.date === null) {
+					// Remove the previous dateTimeSelection response and add a new one
+					setResponses((prev) => [
+						// Keep all responses except the last dateTimeSelection
+						...prev.filter((response) => response.type !== 'dateTimeSelection'),
+						{
+							text: 'Please select a new date for your appointment:',
+							sender: 'ai',
+							type: 'dateTimeSelection',
+							data: {
+								currentPage: 0,
+								appointmentTime: null,
+								selectedTime: null,
+								bookedSlots: [],
+							},
+						},
+					]);
+					return;
+				}
+
+				// For new appointment booking flow
+				if (guidedFlow === 'BookAppointment' && data.date) {
 					try {
-						// Ensure we have a valid Date object
 						const selectedDate = new Date(data.date);
 						if (isNaN(selectedDate.getTime())) {
 							throw new Error('Invalid date selected');
@@ -792,24 +821,73 @@ const Chatbot = () => {
 							appointmentTime: selectedDate.toISOString(),
 						}));
 
-						setResponses((prev) =>
-							prev.map((response) =>
-								response.type === 'dateTimeSelection'
-									? {
-											...response,
-											data: {
-												...response.data,
-												appointmentTime: selectedDate.toISOString(),
-												bookedSlots: Array.isArray(bookedSlots)
-													? bookedSlots
-													: [],
-												selectedTime: null,
-												currentPage: 0,
-											},
-									  }
-									: response
-							)
-						);
+						// Update only the most recent dateTimeSelection response
+						setResponses((prev) => {
+							const withoutLastDateSelection = prev.filter(
+								(response) => response.type !== 'dateTimeSelection'
+							);
+							return [
+								...withoutLastDateSelection,
+								{
+									text: 'Please select a preferred time:',
+									sender: 'ai',
+									type: 'dateTimeSelection',
+									data: {
+										appointmentTime: selectedDate.toISOString(),
+										bookedSlots: Array.isArray(bookedSlots) ? bookedSlots : [],
+										selectedTime: null,
+										currentPage: 0,
+									},
+								},
+							];
+						});
+					} catch (error) {
+						console.error('Error handling date selection:', error);
+						setResponses((prev) => [
+							...prev,
+							{
+								text: 'Sorry, there was an error selecting that date. Please try again.',
+								sender: 'ai',
+							},
+						]);
+					}
+				}
+				// For rescheduling flow
+				else if (guidedFlow === 'RescheduleAppointment' && data.date) {
+					try {
+						const selectedDate = new Date(data.date);
+						if (isNaN(selectedDate.getTime())) {
+							throw new Error('Invalid date selected');
+						}
+
+						const bookedSlots = await fetchBookedSlots(selectedDate);
+
+						// Update flowData with the selected date
+						setFlowData((prev) => ({
+							...prev,
+							appointmentTime: selectedDate.toISOString(),
+						}));
+
+						// Update only the most recent dateTimeSelection response
+						setResponses((prev) => {
+							const withoutLastDateSelection = prev.filter(
+								(response) => response.type !== 'dateTimeSelection'
+							);
+							return [
+								...withoutLastDateSelection,
+								{
+									text: 'Please select a preferred time:',
+									sender: 'ai',
+									type: 'dateTimeSelection',
+									data: {
+										appointmentTime: selectedDate.toISOString(),
+										bookedSlots: Array.isArray(bookedSlots) ? bookedSlots : [],
+										selectedTime: null,
+										currentPage: 0,
+									},
+								},
+							];
+						});
 					} catch (error) {
 						console.error('Error handling date selection:', error);
 						setResponses((prev) => [
@@ -823,6 +901,7 @@ const Chatbot = () => {
 				}
 				break;
 
+			// BOOKING APPOINTMENT TIME SLOT
 			case 'selectTimeSlot':
 				const selectedTime = data;
 				setFlowData((prev) => ({
@@ -830,73 +909,104 @@ const Chatbot = () => {
 					selectedTime,
 				}));
 
-				try {
-					const token = localStorage.getItem('token');
-					if (!token) {
+				if (guidedFlow === 'BookAppointment') {
+					try {
+						const token = localStorage.getItem('token');
+						console.log('IN BOOKING FLOW SELECTTIMESLOT');
+						if (!token) {
+							setResponses((prev) => [
+								...prev,
+								{ text: selectedTime, sender: 'user' },
+								{ text: 'Please tell me your full name:', sender: 'ai' },
+							]);
+							setCurrentInputType('name');
+						} else {
+							const response = await fetch(
+								`${config.apiUrl}/api/auth/user-details`,
+								{
+									method: 'GET',
+									headers: {
+										'Content-Type': 'application/json',
+										Authorization: `Bearer ${token}`,
+									},
+								}
+							);
+
+							if (response.ok) {
+								const userData = await response.json();
+								// Store user data in flowData
+								setFlowData((prev) => ({
+									...prev,
+									userData: {
+										name: userData.name,
+										email: userData.email,
+										phone: userData.phone,
+										weight: userData.weight,
+										height: userData.height,
+									},
+									selectedTime: selectedTime,
+								}));
+
+								setResponses((prev) => [
+									...prev,
+									{
+										text: selectedTime,
+										sender: 'user',
+									},
+									{
+										text: [
+											'Please confirm if these details are correct:',
+											'',
+											`Name:  ${userData.name}`,
+											`Email:  ${userData.email}`,
+											`Phone:  ${userData.phone}`,
+										].join('\n'),
+										sender: 'ai',
+										type: 'userConfirmation',
+										data: userData,
+									},
+								]);
+							} else {
+								throw new Error('Authentication failed');
+							}
+						}
+					} catch (error) {
+						console.error('Error:', error);
 						setResponses((prev) => [
 							...prev,
 							{ text: selectedTime, sender: 'user' },
 							{ text: 'Please tell me your full name:', sender: 'ai' },
 						]);
 						setCurrentInputType('name');
-					} else {
-						const response = await fetch(
-							`${config.apiUrl}/api/auth/user-details`,
-							{
-								method: 'GET',
-								headers: {
-									'Content-Type': 'application/json',
-									Authorization: `Bearer ${token}`,
-								},
-							}
-						);
-
-						if (response.ok) {
-							const userData = await response.json();
-							// Store user data in flowData
-							setFlowData((prev) => ({
-								...prev,
-								userData: {
-									name: userData.name,
-									email: userData.email,
-									phone: userData.phone,
-									weight: userData.weight,
-									height: userData.height,
-								},
-								selectedTime: selectedTime,
-							}));
-
-							setResponses((prev) => [
-								...prev,
-								{
-									text: selectedTime,
-									sender: 'user',
-								},
-								{
-									text: [
-										'Please confirm if these details are correct:',
-										'',
-										`Name:  ${userData.name}`,
-										`Email:  ${userData.email}`,
-										`Phone:  ${userData.phone}`,
-									].join('\n'),
-									sender: 'ai',
-									type: 'userConfirmation',
-									data: userData,
-								},
-							]);
-						} else {
-							throw new Error('Authentication failed');
-						}
 					}
-				} catch (error) {
-					console.error('Error:', error);
+				} else if (guidedFlow === 'RescheduleAppointment') {
+					// Calculate new date time for the rescheduled appointment
+					const selectedDate = new Date(flowData.appointmentTime);
+					const { hours, minutes } = parseTimeSlot(selectedTime);
+					const newDateTime = set(selectedDate, {
+						hours,
+						minutes,
+						seconds: 0,
+						milliseconds: 0,
+					});
+
+					// Update flowData with the new date time
+					setFlowData((prev) => ({
+						...prev,
+						selectedTime,
+						newDateTime: newDateTime.toISOString(),
+					}));
+
+					// Ask for reschedule reason
 					setResponses((prev) => [
 						...prev,
 						{ text: selectedTime, sender: 'user' },
-						{ text: 'Please tell me your full name:', sender: 'ai' },
+						{
+							text: 'Please provide a reason for rescheduling (Required):',
+							sender: 'ai',
+						},
 					]);
-					setCurrentInputType('name');
+					setCurrentInputType('rescheduleNotes');
 				}
 				break;
 
@@ -1109,13 +1219,26 @@ const Chatbot = () => {
 				break;
 
 			case 'selectAppointment':
-				if (guidedFlow === 'RescheduleAppointment') {
-					setFlowData((prev) => ({
-						...prev,
-						selectedAppointment: data,
-					}));
+				const selectedAppointment = data;
+				setFlowData((prev) => ({
+					...prev,
+					selectedAppointment,
+				}));
 
-					// Show date selection with pagination like booking flow
+				// Add user's selection to chat
+				setResponses((prev) => [
+					...prev,
+					{
+						text: `Selected appointment: ${format(
+							new Date(selectedAppointment.appointmentTime),
+							'PPpp'
+						)}`,
+						sender: 'user',
+					},
+				]);
+
+				if (guidedFlow === 'RescheduleAppointment') {
+					console.log(guidedFlow);
 					setResponses((prev) => [
 						...prev,
 						{
@@ -1123,78 +1246,42 @@ const Chatbot = () => {
 							sender: 'ai',
 							type: 'dateTimeSelection',
 							data: {
-								dates: getPaginatedDates(),
 								currentPage: 0,
 								appointmentTime: null,
 								selectedTime: null,
+								bookedSlots: [],
 							},
 						},
 					]);
+				} else if (guidedFlow === 'CancelAppointment') {
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Please provide a reason for cancellation:',
+							sender: 'ai',
+						},
+					]);
+					setCurrentInputType('cancellationReason');
 				}
 				break;
 
-			case 'updateDateTime':
-				if (guidedFlow === 'RescheduleAppointment' && data.date) {
-					try {
-						const selectedDate = new Date(data.date);
-						if (isNaN(selectedDate.getTime())) {
-							throw new Error('Invalid date selected');
-						}
-
-						// Fetch available time slots
-						const bookedSlots = await fetchBookedSlots(selectedDate);
-
-						// Update flowData with the selected date
-						setFlowData((prev) => ({
-							...prev,
-							appointmentTime: selectedDate.toISOString(),
-						}));
-
-						// Show time slot selection
-						setResponses((prev) => [
-							...prev,
-							{
-								text: 'Please select a preferred time:',
-								sender: 'ai',
-								type: 'timeSlotSelection',
-								data: {
-									appointmentTime: selectedDate.toISOString(),
-									bookedSlots: Array.isArray(bookedSlots) ? bookedSlots : [],
-									selectedTime: null,
-								},
-							},
-						]);
-					} catch (error) {
-						console.error('Error handling date selection:', error);
-						setResponses((prev) => [
-							...prev,
-							{
-								text: 'Sorry, there was an error selecting that date. Please try again.',
-								sender: 'ai',
-							},
-						]);
-					}
+			case 'rescheduleNotes':
+				if (!userInputText?.trim()) {
+					setResponses((prev) => [
+						...prev,
+						{ text: '', sender: 'user' },
+						{
+							text: 'Please provide a reason for rescheduling (Required):',
+							sender: 'ai',
+						},
+					]);
+					return;
 				}
-				break;
 
-			case 'selectTimeSlot':
-				if (guidedFlow === 'RescheduleAppointment') {
-					const selectedDate = new Date(flowData.appointmentTime);
-					const { hours, minutes } = parseTimeSlot(data);
-					const newDateTime = set(selectedDate, {
-						hours,
-						minutes,
-						seconds: 0,
-						milliseconds: 0,
-					});
-					console.log('SELECT DATE');
+				const handleReschedule = async () => {
+					// Add async function
 					try {
-						// Update flowData with selected time before making API call
-						setFlowData((prev) => ({
-							...prev,
-							selectedTime: data,
-						}));
-
+						const notes = userInputText?.trim();
 						const response = await fetch(
 							`${config.apiUrl}/api/appointments/${flowData.selectedAppointment._id}/reschedule`,
 							{
@@ -1204,8 +1291,8 @@ const Chatbot = () => {
 									Authorization: `Bearer ${localStorage.getItem('token')}`,
 								},
 								body: JSON.stringify({
-									newDateTime: newDateTime.toISOString(),
-									reason: 'Rescheduled via chatbot',
+									newDateTime: flowData.newDateTime,
+									reason: notes,
 								}),
 							}
 						);
@@ -1214,13 +1301,14 @@ const Chatbot = () => {
 							throw new Error('Failed to reschedule appointment');
 						}
 
-						// Get appointment details for confirmation
 						const { title } = getAppointmentDescription(
 							flowData.selectedAppointment
 						);
+						const newDateTime = new Date(flowData.newDateTime);
 
 						setResponses((prev) => [
 							...prev,
+							{ text: notes, sender: 'user' },
 							{
 								text: `Your appointment for ${title} has been rescheduled to ${format(
 									newDateTime,
@@ -1230,7 +1318,7 @@ const Chatbot = () => {
 							},
 						]);
 
-						// Reset states after successful rescheduling
+						// Reset states
 						setGuidedFlow(null);
 						setFlowData({});
 						setCurrentInputType(null);
@@ -1244,7 +1332,9 @@ const Chatbot = () => {
 							},
 						]);
 					}
-				}
+				};
+
+				handleReschedule(); // Call the async function
 				break;
 
 			case 'confirmation':
@@ -1296,29 +1386,20 @@ const Chatbot = () => {
 				break;
 
 			case 'userDetailsConfirm':
-				if (data) {
-					// Details confirmed, proceed to doctor preference
-					setResponses((prev) => [
-						...prev,
-						{
-							text: 'Please select your preferred doctor gender:',
-							sender: 'ai',
-							type: 'doctorPreferenceSelection',
-							data: [
-								{ value: 'any', label: 'No Preference' },
-								{ value: 'male', label: 'Male Doctor' },
-								{ value: 'female', label: 'Female Doctor' },
-							],
-						},
-					]);
-				} else {
-					// Start over with user details
-					setCurrentInputType('name');
-					setResponses((prev) => [
-						...prev,
-						{ text: 'Please enter your full name:', sender: 'ai' },
-					]);
-				}
+				// Details confirmed, proceed to doctor preference
+				setResponses((prev) => [
+					...prev,
+					{
+						text: 'Please select your preferred doctor gender:',
+						sender: 'ai',
+						type: 'doctorPreferenceSelection',
+						data: [
+							{ value: 'any', label: 'No Preference' },
+							{ value: 'male', label: 'Male Doctor' },
+							{ value: 'female', label: 'Female Doctor' },
+						],
+					},
+				]);
 				break;
 
 			case 'updateUserField':
@@ -1512,56 +1593,6 @@ const Chatbot = () => {
 				setCurrentInputType(null);
 				break;
 
-			case 'selectAppointment':
-				const appointment = data;
-				setFlowData((prev) => ({
-					...prev,
-					selectedAppointment: appointment,
-				}));
-
-				if (guidedFlow === 'RescheduleAppointment') {
-					setResponses((prev) => [
-						...prev,
-						{
-							text: `Selected appointment: ${format(
-								new Date(appointment.appointmentTime),
-								'PPpp'
-							)}`,
-							sender: 'user',
-						},
-						{
-							text: 'Please select a new date and time:',
-							sender: 'ai',
-							type: 'dateTimeSelection',
-							data: {
-								currentPage: 0,
-								appointmentTime: null,
-								selectedTime: null,
-								bookedSlots: [],
-							},
-						},
-					]);
-				} else if (guidedFlow === 'CancelAppointment') {
-					setResponses((prev) => [
-						...prev,
-						{
-							text: `Selected appointment: ${format(
-								new Date(appointment.appointmentTime),
-								'PPpp'
-							)}`,
-							sender: 'user',
-						},
-						{
-							text: 'Please provide a reason for cancellation:',
-							sender: 'ai',
-							type: 'textInput',
-							field: 'cancellationReason',
-						},
-					]);
-					setCurrentInputType('cancellationReason');
-				}
-				break;
-
 			case 'cancellationReason':
 				if (!userInputText?.trim()) {
 					setResponses((prev) => [
@@ -1676,6 +1707,10 @@ const Chatbot = () => {
 						})
 					);
 				}
+				break;
+
+			case 'rescheduleNotes':
+				handleGuidedAction('rescheduleNotes', null, userInputText);
 				break;
 
 			default:
@@ -2042,6 +2077,78 @@ const Chatbot = () => {
 						]);
 					}
 					return;
+
+				case 'rescheduleNotes':
+					if (!userInputText?.trim()) {
+						setResponses((prev) => [
+							...prev,
+							{ text: '', sender: 'user' },
+							{
+								text: 'Please provide a reason for rescheduling (Required):',
+								sender: 'ai',
+							},
+						]);
+						return;
+					}
+
+					const handleReschedule = async () => {
+						// Add async function
+						try {
+							const notes = userInputText?.trim();
+							const response = await fetch(
+								`${config.apiUrl}/api/appointments/${flowData.selectedAppointment._id}/reschedule`,
+								{
+									method: 'PUT',
+									headers: {
+										'Content-Type': 'application/json',
+										Authorization: `Bearer ${localStorage.getItem('token')}`,
+									},
+									body: JSON.stringify({
+										newDateTime: flowData.newDateTime,
+										reason: notes,
+									}),
+								}
+							);
+
+							if (!response.ok) {
+								throw new Error('Failed to reschedule appointment');
+							}
+
+							const { title } = getAppointmentDescription(
+								flowData.selectedAppointment
+							);
+							const newDateTime = new Date(flowData.newDateTime);
+
+							setResponses((prev) => [
+								...prev,
+								{ text: notes, sender: 'user' },
+								{
+									text: `Your appointment for ${title} has been rescheduled to ${format(
+										newDateTime,
+										'MMMM d, yyyy'
+									)} at ${format(newDateTime, 'h:mm a')}.`,
+									sender: 'ai',
+								},
+							]);
+
+							// Reset states
+							setGuidedFlow(null);
+							setFlowData({});
+							setCurrentInputType(null);
+						} catch (error) {
+							console.error('Error rescheduling appointment:', error);
+							setResponses((prev) => [
+								...prev,
+								{
+									text: 'Sorry, there was an error rescheduling your appointment. Please try again later.',
+									sender: 'ai',
+								},
+							]);
+						}
+					};
+
+					handleReschedule(); // Call the async function
+					break;
 
 				case 'cancellationReason':
 					if (!userInputText?.trim()) {
