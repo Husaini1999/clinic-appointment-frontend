@@ -54,6 +54,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const [selectedService, setSelectedService] = useState(null);
 	const [categories, setCategories] = useState([]);
 	const [selectedCategory, setSelectedCategory] = useState('');
+	const [bookedSlots, setBookedSlots] = useState([]);
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -643,79 +644,121 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 								>
 									Available Time Slots:
 								</Typography>
-								{getTimeSlots().map((slot) => (
-									<Button
-										key={slot}
-										size="small"
-										variant={
-											formData.appointmentTime &&
-											format(formData.appointmentTime, 'p') === slot
-												? 'contained'
-												: 'outlined'
-										}
-										color="primary"
-										onClick={() => {
-											if (formData.appointmentTime) {
-												const [time, period] = slot.split(' ');
-												const [hours, minutes] = time.split(':');
-												let hour = parseInt(hours);
-
-												// Convert to 24-hour format for setting
-												if (period === 'PM' && hour !== 12) {
-													hour += 12;
-												} else if (period === 'AM' && hour === 12) {
-													hour = 0;
-												}
-
-												const newDate = set(formData.appointmentTime, {
-													hours: hour,
-													minutes: parseInt(minutes),
-												});
-
-												setFormData({
-													...formData,
-													appointmentTime: newDate,
-												});
+								{getTimeSlots().map((slot) => {
+									const isBooked = bookedSlots.includes(slot);
+									return (
+										<Button
+											key={slot}
+											size="small"
+											variant={
+												formData.appointmentTime &&
+												format(formData.appointmentTime, 'p') === slot
+													? 'contained'
+													: 'outlined'
 											}
-										}}
-										disabled={
-											!formData.appointmentTime ||
-											!isWeekday(formData.appointmentTime) ||
-											(() => {
-												if (!formData.appointmentTime) return true;
+											color="primary"
+											onClick={() => {
+												if (formData.appointmentTime) {
+													const [time, period] = slot.split(' ');
+													const [hours, minutes] = time.split(':');
+													let hour = parseInt(hours);
 
-												const now = new Date();
-												const slotTime = new Date(formData.appointmentTime);
-												const [time, period] = slot.split(' ');
-												const [hours, minutes] = time.split(':');
-												let hour = parseInt(hours);
+													if (period === 'PM' && hour !== 12) {
+														hour += 12;
+													} else if (period === 'AM' && hour === 12) {
+														hour = 0;
+													}
 
-												// Convert to 24-hour format
-												if (period === 'PM' && hour !== 12) {
-													hour += 12;
-												} else if (period === 'AM' && hour === 12) {
-													hour = 0;
+													const newDate = set(formData.appointmentTime, {
+														hours: hour,
+														minutes: parseInt(minutes),
+													});
+
+													setFormData({
+														...formData,
+														appointmentTime: newDate,
+													});
 												}
+											}}
+											disabled={
+												!formData.appointmentTime ||
+												!isWeekday(formData.appointmentTime) ||
+												isBooked ||
+												(() => {
+													if (!formData.appointmentTime) return true;
 
-												slotTime.setHours(hour, parseInt(minutes), 0, 0);
+													const now = new Date();
+													const slotTime = new Date(formData.appointmentTime);
+													const [time, period] = slot.split(' ');
+													const [hours, minutes] = time.split(':');
+													let hour = parseInt(hours);
 
-												// If it's a future date, only check business hours
-												if (slotTime.toDateString() !== now.toDateString()) {
-													return false;
-												}
+													if (period === 'PM' && hour !== 12) {
+														hour += 12;
+													} else if (period === 'AM' && hour === 12) {
+														hour = 0;
+													}
 
-												// If it's today, check if the time has passed
-												return isBefore(slotTime, now);
-											})()
-										}
-										sx={{
-											minWidth: '90px',
-											fontSize: '0.875rem',
-										}}
-									>
-										{slot}
-									</Button>
-								))}
+													slotTime.setHours(hour, parseInt(minutes), 0, 0);
+
+													if (slotTime.toDateString() !== now.toDateString()) {
+														return false;
+													}
+
+													return isBefore(slotTime, now);
+												})()
+											}
+											sx={{
+												minWidth: '90px',
+												width: '90px', // Fixed width
+												height: '60px', // Fixed height
+												fontSize: '0.875rem',
+												display: 'flex',
+												flexDirection: 'column',
+												justifyContent: 'center',
+												alignItems: 'center',
+												padding: '8px',
+												...(isBooked && {
+													bgcolor: 'grey.300',
+													color: 'grey.500',
+													borderColor: 'grey.400',
+													cursor: 'not-allowed',
+													'&:hover': {
+														bgcolor: 'grey.300',
+														borderColor: 'grey.400',
+													},
+													'&.Mui-disabled': {
+														bgcolor: 'grey.300',
+														color: 'grey.500',
+													},
+												}),
+											}}
+										>
+											<Box
+												sx={{
+													display: 'flex',
+													flexDirection: 'column',
+													alignItems: 'center',
+													width: '100%',
+													height: '100%',
+													justifyContent: 'center',
+												}}
+											>
+												{slot}
+												{isBooked && (
+													<Typography
+														variant="caption"
+														display="block"
+														color="error"
+														sx={{ mt: 0.5 }}
+													>
+														Booked
+													</Typography>
+												)}
+											</Box>
+										</Button>
+									);
+								})}
 							</Box>
 						</Box>
 					</LocalizationProvider>
@@ -792,6 +835,26 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				return false;
 		}
 	};
+
+	const fetchBookedSlots = async (date) => {
+		try {
+			const formattedDate = format(date, 'yyyy-MM-dd');
+			const response = await fetch(
+				`${config.apiUrl}/api/appointments/booked-slots?date=${formattedDate}`
+			);
+			const data = await response.json();
+			setBookedSlots(data.bookedSlots || []);
+		} catch (error) {
+			console.error('Error fetching booked slots:', error);
+			setBookedSlots([]);
+		}
+	};
+
+	useEffect(() => {
+		if (formData.appointmentTime) {
+			fetchBookedSlots(formData.appointmentTime);
+		}
+	}, [formData.appointmentTime]);
 
 	return (
 		<Dialog
