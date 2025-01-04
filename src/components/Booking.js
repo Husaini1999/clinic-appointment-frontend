@@ -35,8 +35,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
 	const [activeStep, setActiveStep] = useState(0);
 	const [formData, setFormData] = useState({
-		treatment: '',
-		serviceId: '',
+		treatment: initialService?.name || '',
+		serviceId: initialService?._id || '',
 		appointmentTime: null,
 		notes: '',
 		name: '',
@@ -51,9 +51,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const [phoneError, setPhoneError] = useState('');
 	const [doctorPreference, setDoctorPreference] = useState('any');
 	const [services, setServices] = useState([]);
-	const [selectedService, setSelectedService] = useState(null);
+	const [selectedService, setSelectedService] = useState(
+		initialService || null
+	);
 	const [categories, setCategories] = useState([]);
-	const [selectedCategory, setSelectedCategory] = useState('');
+	const [selectedCategory, setSelectedCategory] = useState(
+		initialCategory?._id || ''
+	);
 	const [bookedSlots, setBookedSlots] = useState([]);
 
 	useEffect(() => {
@@ -116,7 +120,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 	}, []);
 
 	useEffect(() => {
-		if (open && initialCategory && initialService) {
+		if (open && initialCategory && initialService && initialService.name) {
 			setSelectedCategory(initialCategory._id);
 			setSelectedService(initialService);
 			setFormData((prev) => ({
