@@ -7,26 +7,19 @@ import {
 	Typography,
 	TextField,
 	IconButton,
-	ToggleButtonGroup,
-	ToggleButton,
 	ThemeProvider,
-	FormControl,
-	InputLabel,
-	Select,
-	MenuItem,
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PersonIcon from '@mui/icons-material/Person';
 import config from '../config';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, set, addDays, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import Fuse from 'fuse.js';
 
 const parseTimeSlot = (timeString) => {
 	const [time, period] = timeString.split(' ');
@@ -92,6 +85,44 @@ const getAppointmentDescription = (appointment) => {
 			'h:mm a'
 		)}`,
 	};
+};
+
+// First, add the intent patterns at the top of your file
+const intentPatterns = {
+	booking: [
+		'book appointment',
+		'make appointment',
+		'schedule visit',
+		'need to see doctor',
+		'want to visit',
+		'book a slot',
+		'make booking',
+	],
+	managing: [
+		'manage appointment',
+		'change appointment',
+		'cancel booking',
+		'reschedule visit',
+		'view my appointment',
+		'check my booking',
+	],
+	faq: [
+		'help',
+		'question',
+		'info',
+		'information',
+		'how to',
+		'what is',
+		'tell me about',
+	],
+	location: [
+		'where are you',
+		'clinic location',
+		'address',
+		'how to get there',
+		'directions',
+		'where is the clinic',
+	],
 };
 
 const Chatbot = () => {
@@ -2173,21 +2204,104 @@ const Chatbot = () => {
 					break;
 			}
 		} else {
-			// Handle regular chat input
-			const intent = parseManagementIntent(userInputText);
-			if (intent) {
+			// First check for management intents (existing code)
+			const managementIntent = parseManagementIntent(userInputText);
+			if (managementIntent) {
 				setResponses((prev) => [
 					...prev,
 					{ text: userInputText, sender: 'user' },
 				]);
-				handleGuidedAction('appointmentAction', intent);
-			} else {
-				setResponses((prev) => [
-					...prev,
-					{ text: userInputText || '', sender: 'user' },
-				]);
+				handleGuidedAction('appointmentAction', managementIntent);
+				return;
+			}
+
+			// Add new intent detection
+			const detectedIntent = detectIntent(userInputText);
+			setResponses((prev) => [
+				...prev,
+				{ text: userInputText, sender: 'user' },
+			]);
+
+			switch (detectedIntent) {
+				case 'booking':
+					handleCategoryClick('BookAppointment');
+					break;
+
+				case 'managing':
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Would you like to view, reschedule, or cancel an appointment?',
+							sender: 'ai',
+							type: 'textInput',
+							field: 'management',
+						},
+					]);
+					setCurrentInputType('management');
+					break;
+
+				case 'faq':
+					setMode('faq');
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Here are some common topics. Please select one:',
+							sender: 'ai',
+							type: 'categorySelection',
+							data: categories,
+						},
+					]);
+					break;
+
+				case 'location':
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Our clinic is located at [Your Clinic Address]. You can find directions and more information in the Location section below.',
+							sender: 'ai',
+						},
+					]);
+					break;
+
+				default:
+					// No intent detected, show default help message
+					setResponses((prev) => [
+						...prev,
+						{
+							text:
+								"I'm here to help! You can:\n" +
+								'- Book a new appointment\n' +
+								'- Manage your existing appointments\n' +
+								'- Ask questions about our services\n' +
+								'- Find our location\n\n' +
+								'What would you like to do?',
+							sender: 'ai',
+						},
+					]);
 			}
 		}
+	};
+
+	const createFuzzyMatcher = (patterns) => {
+		const fuse = new Fuse(patterns, {
+			threshold: 0.4,
+			distance: 100,
+		});
+		return (text) => fuse.search(text).length > 0;
+	};
+
+	// Modify detectIntent to use fuzzy matching
+	const detectIntent = (userInput) => {
+		const text = userInput.toLowerCase();
+
+		for (const [intent, patterns] of Object.entries(intentPatterns)) {
+			const fuzzyMatcher = createFuzzyMatcher(patterns);
+			if (fuzzyMatcher(text)) {
+				return intent;
+			}
+		}
+
+		return null;
 	};
 
 	return (
@@ -2393,7 +2507,7 @@ const Chatbot = () => {
 							}
 							value={userInput}
 							onChange={(e) => setUserInput(e.target.value)}
-							onKeyPress={(e) => {
+							onKeyDown={(e) => {
 								if (e.key === 'Enter') {
 									if (currentInputType === 'notes' || userInput.trim()) {
 										handleUserInput(userInput.trim());
