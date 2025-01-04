@@ -671,14 +671,16 @@ const Chatbot = () => {
 						]);
 						setCurrentInputType('name');
 					} else {
-						const response = await fetch(`${config.apiUrl}/api/users/me`, {
-							method: 'GET',
-							headers: {
-								'Content-Type': 'application/json',
-								Authorization: `Bearer ${token}`,
-							},
-							credentials: 'include',
-						});
+						const response = await fetch(
+							`${config.apiUrl}/api/auth/user-details`,
+							{
+								method: 'GET',
+								headers: {
+									'Content-Type': 'application/json',
+									Authorization: `Bearer ${token}`,
+								},
+							}
+						);
 
 						if (response.ok) {
 							const userData = await response.json();
