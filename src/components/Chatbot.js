@@ -155,6 +155,13 @@ const intentPatterns = {
 		'reach you',
 		'contact details',
 	],
+	services: [
+		'what services do you offer',
+		'available treatments',
+		'list of services',
+		'services available',
+		'treatments offered',
+	],
 };
 
 // Add more response variations
@@ -175,7 +182,6 @@ const responseVariations = {
 		'Our clinic is located at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang, Wilayah Persekutuan Kuala Lumpur. Need directions?',
 		"You can find us at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang. We're in the Desa Pahlawan area.",
 		"We're conveniently located at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang, with parking available.",
-		'For your convenience, you can contact us at 018-786 9727 for directions or any inquiries.',
 	],
 	managing: [
 		'Would you like to reschedule or cancel an appointment?',
@@ -2100,6 +2106,7 @@ const Chatbot = () => {
 	};
 
 	const handleUserInput = async (userInputText) => {
+		setIsProcessing(true);
 		if (currentInputType) {
 			// Handle guided input types
 			switch (currentInputType) {
@@ -2373,7 +2380,7 @@ const Chatbot = () => {
 				...prev,
 				{ text: userInputText, sender: 'user' },
 			]);
-
+			console.log('USER INPUT', userInputText);
 			// Update conversation context
 			setConversationContext((prev) => ({
 				...prev,
@@ -2400,11 +2407,13 @@ const Chatbot = () => {
 
 				// Add context-aware additions based on confidence
 				if (confidence < 0.5) {
-					return `${baseResponse}\n\nIf this isn't what you're looking for, please rephrase your request.`;
+					return `I didn't quite catch that. Could you please rephrase your question so I can better assist you?`;
 				}
 				return baseResponse;
 			};
 
+			console.log('Detected Intent:', detectedIntent);
+			console.log('Confidence Score:', confidence);
 			switch (detectedIntent) {
 				case 'booking':
 					const bookingResponse = getContextAwareResponse('booking');
@@ -2462,62 +2471,59 @@ const Chatbot = () => {
 					]);
 					break; // Just use break instead of return
 
-				default:
-					// Remove the separate default response
+				case 'services':
+					const services = await fetchServices();
+					const servicesList = services
+						.map((service) => `- ${service.name}`)
+						.sort((a, b) => a.localeCompare(b)) // Sort in ascending alphabetical order
+						.join('\n');
 					setResponses((prev) => [
 						...prev,
 						{
-							text:
-								confidence < 0.5
-									? "I'm not quite sure what you're asking for. Here are some things I can help you with:"
-									: "I'm here to help! How can I assist you?",
+							text: `Here are the services we offer:\n${servicesList}\nand more. \n\nFor more info, you may view our services on our website.`,
 							sender: 'ai',
-							type: 'options',
-							data: [
-								{ label: 'Book Appointment', value: 'booking' },
-								{ label: 'Manage Appointments', value: 'managing' },
-								{ label: 'Find Clinic Location', value: 'location' },
-								{ label: 'Contact Us', value: 'contact' },
-								{ label: 'Help/FAQ', value: 'help' },
-							],
 						},
 					]);
-			}
+					break;
 
+				// Add a default case to handle low-confidence scenarios
+				default:
+					if (confidence < 0.5) {
+						setResponses((prev) => [
+							...prev,
+							{
+								text: "I'm not sure I understood that. Could you please rephrase?",
+								sender: 'ai',
+							},
+						]);
+					}
+					break;
+			}
+			setUserInput('');
 			setIsProcessing(false);
 		}
 	};
 
-	const createFuzzyMatcher = (patterns) => {
-		const fuse = new Fuse(patterns, {
-			threshold: 0.4,
-			distance: 100,
-		});
-		return (text) => fuse.search(text).length > 0;
-	};
-
 	// Modify detectIntent to use fuzzy matching
 	const detectIntent = async (text) => {
-		// First, check for exact matches
 		const lowercaseText = text.toLowerCase().trim();
 
-		// Direct matches for common intents
 		const directMatches = {
 			help: ['help', 'faq', 'what can you do', 'guide me'],
 			booking: ['book', 'appointment', 'schedule', 'book appointment'],
 			managing: ['manage', 'reschedule', 'cancel', 'change appointment'],
 			location: ['where', 'location', 'address', 'clinic location'],
 			contact: ['contact', 'phone', 'call', 'reach'],
+			services: ['services', 'treatments', 'available services'],
 		};
 
-		// Check for exact matches first
 		for (const [intent, patterns] of Object.entries(directMatches)) {
 			if (patterns.some((pattern) => lowercaseText.includes(pattern))) {
 				setConfidence(1.0); // Set high confidence for exact matches
 				return intent;
 			}
 		}
-
+		console.log(text);
 		// If no exact match, use Hugging Face API
 		return await processWithHuggingFace(text);
 	};
@@ -2577,6 +2583,16 @@ const Chatbot = () => {
 				statusText: error.statusText,
 			});
 			return null;
+		}
+	};
+
+	const fetchServices = async () => {
+		try {
+			const response = await axios.get(`${config.apiUrl}/api/services?limit=5`);
+			return response.data;
+		} catch (error) {
+			console.error('Error fetching services:', error);
+			return [];
 		}
 	};
 
@@ -2779,7 +2795,7 @@ const Chatbot = () => {
 										: currentInputType === 'phone'
 										? 'Enter your phone number (e.g., 0123456789 or +60123456789)...'
 										: currentInputType === 'notes'
-										? 'Type your message or click Send to skip (Optional)...'
+										? 'Type your message or click Skip to skip notes (Optional)...'
 										: 'Type a message...'
 								}
 								value={userInput}
