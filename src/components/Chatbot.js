@@ -69,6 +69,31 @@ const validateAndFormatPhone = (phone) => {
 	return { isValid: true, formatted };
 };
 
+const parseManagementIntent = (text) => {
+	const lowercaseText = text.toLowerCase().trim();
+	if (
+		lowercaseText.includes('reschedule') ||
+		lowercaseText.includes('change')
+	) {
+		return 'Reschedule';
+	}
+	if (lowercaseText.includes('cancel') || lowercaseText.includes('delete')) {
+		return 'Cancel';
+	}
+	return null;
+};
+
+const getAppointmentDescription = (appointment) => {
+	const appointmentDate = new Date(appointment.appointmentTime);
+	return {
+		title: `${appointment?.treatment?.name || 'N/A'}`,
+		datetime: `${format(appointmentDate, 'MMMM d, yyyy')} at ${format(
+			appointmentDate,
+			'h:mm a'
+		)}`,
+	};
+};
+
 const Chatbot = () => {
 	const [open, setOpen] = useState(false);
 	const [userInput, setUserInput] = useState('');
@@ -113,17 +138,16 @@ const Chatbot = () => {
 	const handleCategoryClick = async (category) => {
 		if (category === 'BookAppointment') {
 			setGuidedFlow('BookAppointment');
-			setCurrentStep(0);
 			setFlowData({});
+			setCurrentStep(0);
+			setCurrentInputType(null);
 
 			try {
-				// Fetch categories from the API
 				const response = await fetch(`${config.apiUrl}/api/categories`);
 				const categoriesData = await response.json();
 
 				setResponses((prev) => [
 					...prev,
-					{ text: 'Book Appointment', sender: 'user' },
 					{
 						text: "Let's help you book an appointment. First, please select a service category:",
 						sender: 'ai',
@@ -132,7 +156,7 @@ const Chatbot = () => {
 						text: 'Categories',
 						sender: 'ai',
 						type: 'categorySelection',
-						data: categoriesData, // Now using actual categories from API
+						data: categoriesData,
 					},
 				]);
 			} catch (error) {
@@ -146,6 +170,11 @@ const Chatbot = () => {
 				]);
 			}
 		} else if (category === 'ManageAppointment') {
+			setGuidedFlow('ManageAppointment');
+			setFlowData({});
+			setCurrentStep(0);
+			setCurrentInputType(null);
+
 			setResponses((prev) => [
 				...prev,
 				{ text: 'Manage Appointment', sender: 'user' },
@@ -565,10 +594,125 @@ const Chatbot = () => {
 						</Typography>
 					</Box>
 				);
+			case 'managementOptions':
+				return (
+					<Box>
+						<Typography variant="body1" sx={{ mb: 2 }}>
+							{response.text}
+						</Typography>
+						<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+							{response.data.map((option) => (
+								<Button
+									key={option.value}
+									variant="outlined"
+									onClick={() => onAction('appointmentAction', option.value)}
+									sx={{
+										flex: '1 1 calc(50% - 8px)',
+										minWidth: '150px',
+									}}
+								>
+									{option.label}
+								</Button>
+							))}
+						</Box>
+					</Box>
+				);
+			case 'appointmentSelection':
+				const appointments = Array.isArray(response.data)
+					? response.data
+					: response.data?.appointments || [];
+				const currentPage = response.data?.currentPage || 0;
+
+				return (
+					<Box>
+						<Typography variant="body1" sx={{ mb: 2 }}>
+							{response.text}
+						</Typography>
+
+						{/* Appointments List */}
+						<Box
+							sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}
+						>
+							{appointments
+								.slice(currentPage * 3, (currentPage + 1) * 3)
+								.map((appointment) => {
+									const { title, datetime } =
+										getAppointmentDescription(appointment);
+									return (
+										<Button
+											key={appointment._id}
+											variant="outlined"
+											onClick={() => onAction('selectAppointment', appointment)}
+											sx={{
+												p: 2,
+												textAlign: 'left',
+												display: 'flex',
+												flexDirection: 'column',
+												alignItems: 'flex-start',
+												borderColor: 'primary.main',
+												'&:hover': {
+													borderColor: 'primary.dark',
+													backgroundColor: 'primary.light',
+												},
+											}}
+										>
+											<Typography
+												variant="subtitle1"
+												sx={{ fontWeight: 'bold' }}
+											>
+												{title}
+											</Typography>
+											<Typography variant="body2" color="text.secondary">
+												{datetime}
+											</Typography>
+										</Button>
+									);
+								})}
+						</Box>
+
+						{/* Pagination Controls */}
+						{appointments.length > 3 && (
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									mt: 2,
+									px: 1,
+								}}
+							>
+								<Button
+									onClick={() =>
+										onAction('changeAppointmentPage', { direction: 'prev' })
+									}
+									disabled={!currentPage}
+									startIcon={<ArrowBackIcon />}
+									sx={{ minWidth: '100px' }}
+								>
+									Previous
+								</Button>
+								<Typography variant="body2" sx={{ alignSelf: 'center' }}>
+									Page {currentPage + 1} of {Math.ceil(appointments.length / 3)}
+								</Typography>
+								<Button
+									onClick={() =>
+										onAction('changeAppointmentPage', { direction: 'next' })
+									}
+									disabled={
+										currentPage >= Math.ceil(appointments.length / 3) - 1
+									}
+									endIcon={<ArrowForwardIcon />}
+									sx={{ minWidth: '100px' }}
+								>
+									Next
+								</Button>
+							</Box>
+						)}
+					</Box>
+				);
 		}
 	};
 
-	const handleGuidedAction = async (action, data) => {
+	const handleGuidedAction = async (action, data, userInputText) => {
 		switch (action) {
 			case 'selectCategory':
 				setResponses((prev) => [
@@ -900,21 +1044,55 @@ const Chatbot = () => {
 				break;
 
 			case 'appointmentAction':
-				if (data === 'Reschedule') {
-					setGuidedFlow('RescheduleAppointment');
-					// Fetch user's appointments
+				if (data === 'Reschedule' || data === 'Cancel') {
+					const action = data;
+					setGuidedFlow(
+						action === 'Reschedule'
+							? 'RescheduleAppointment'
+							: 'CancelAppointment'
+					);
+
 					try {
+						const cachedUser = JSON.parse(localStorage.getItem('user'));
 						const response = await fetch(
-							`${config.apiUrl}/api/appointments/user`
+							`${config.apiUrl}/api/appointments/patient?email=${cachedUser.email}`,
+							{
+								headers: {
+									Authorization: `Bearer ${localStorage.getItem('token')}`,
+								},
+							}
 						);
 						const appointments = await response.json();
+
+						// Sort appointments by date in ascending order
+						const sortedAppointments = appointments
+							.filter((apt) => apt.status === 'pending')
+							.sort(
+								(a, b) =>
+									new Date(a.appointmentTime) - new Date(b.appointmentTime)
+							);
+
+						if (sortedAppointments.length === 0) {
+							setResponses((prev) => [
+								...prev,
+								{
+									text: `You have no upcoming appointments to ${action.toLowerCase()}.`,
+									sender: 'ai',
+								},
+							]);
+							return;
+						}
+
 						setResponses((prev) => [
 							...prev,
 							{
-								text: 'Which appointment would you like to reschedule?',
+								text: `Which appointment would you like to ${action.toLowerCase()}?`,
 								sender: 'ai',
 								type: 'appointmentSelection',
-								data: appointments,
+								data: {
+									appointments: sortedAppointments,
+									currentPage: 0,
+								},
 							},
 						]);
 					} catch (error) {
@@ -927,10 +1105,145 @@ const Chatbot = () => {
 							},
 						]);
 					}
-				} else if (data === 'Cancel') {
-					setGuidedFlow('CancelAppointment');
-					// Similar to reschedule, but for cancellation
-					// ... implementation similar to reschedule
+				}
+				break;
+
+			case 'selectAppointment':
+				if (guidedFlow === 'RescheduleAppointment') {
+					setFlowData((prev) => ({
+						...prev,
+						selectedAppointment: data,
+					}));
+
+					// Show date selection with pagination like booking flow
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Please select a new date for your appointment:',
+							sender: 'ai',
+							type: 'dateTimeSelection',
+							data: {
+								dates: getPaginatedDates(),
+								currentPage: 0,
+								appointmentTime: null,
+								selectedTime: null,
+							},
+						},
+					]);
+				}
+				break;
+
+			case 'updateDateTime':
+				if (guidedFlow === 'RescheduleAppointment' && data.date) {
+					try {
+						const selectedDate = new Date(data.date);
+						if (isNaN(selectedDate.getTime())) {
+							throw new Error('Invalid date selected');
+						}
+
+						// Fetch available time slots
+						const bookedSlots = await fetchBookedSlots(selectedDate);
+
+						// Update flowData with the selected date
+						setFlowData((prev) => ({
+							...prev,
+							appointmentTime: selectedDate.toISOString(),
+						}));
+
+						// Show time slot selection
+						setResponses((prev) => [
+							...prev,
+							{
+								text: 'Please select a preferred time:',
+								sender: 'ai',
+								type: 'timeSlotSelection',
+								data: {
+									appointmentTime: selectedDate.toISOString(),
+									bookedSlots: Array.isArray(bookedSlots) ? bookedSlots : [],
+									selectedTime: null,
+								},
+							},
+						]);
+					} catch (error) {
+						console.error('Error handling date selection:', error);
+						setResponses((prev) => [
+							...prev,
+							{
+								text: 'Sorry, there was an error selecting that date. Please try again.',
+								sender: 'ai',
+							},
+						]);
+					}
+				}
+				break;
+
+			case 'selectTimeSlot':
+				if (guidedFlow === 'RescheduleAppointment') {
+					const selectedDate = new Date(flowData.appointmentTime);
+					const { hours, minutes } = parseTimeSlot(data);
+					const newDateTime = set(selectedDate, {
+						hours,
+						minutes,
+						seconds: 0,
+						milliseconds: 0,
+					});
+					console.log('SELECT DATE');
+					try {
+						// Update flowData with selected time before making API call
+						setFlowData((prev) => ({
+							...prev,
+							selectedTime: data,
+						}));
+
+						const response = await fetch(
+							`${config.apiUrl}/api/appointments/${flowData.selectedAppointment._id}/reschedule`,
+							{
+								method: 'PUT',
+								headers: {
+									'Content-Type': 'application/json',
+									Authorization: `Bearer ${localStorage.getItem('token')}`,
+								},
+								body: JSON.stringify({
+									newDateTime: newDateTime.toISOString(),
+									reason: 'Rescheduled via chatbot',
+								}),
+							}
+						);
+
+						if (!response.ok) {
+							throw new Error('Failed to reschedule appointment');
+						}
+
+						// Get appointment details for confirmation
+						const { title } = getAppointmentDescription(
+							flowData.selectedAppointment
+						);
+
+						setResponses((prev) => [
+							...prev,
+							{
+								text: `Your appointment for ${title} has been rescheduled to ${format(
+									newDateTime,
+									'MMMM d, yyyy'
+								)} at ${format(newDateTime, 'h:mm a')}.`,
+								sender: 'ai',
+							},
+						]);
+
+						// Reset states after successful rescheduling
+						setGuidedFlow(null);
+						setFlowData({});
+						setCurrentInputType(null);
+					} catch (error) {
+						console.error('Error rescheduling appointment:', error);
+						setResponses((prev) => [
+							...prev,
+							{
+								text: 'Sorry, there was an error rescheduling your appointment. Please try again later.',
+								sender: 'ai',
+							},
+						]);
+					}
 				}
 				break;
 
@@ -1199,6 +1512,172 @@ const Chatbot = () => {
 				setCurrentInputType(null);
 				break;
 
+			case 'selectAppointment':
+				const appointment = data;
+				setFlowData((prev) => ({
+					...prev,
+					selectedAppointment: appointment,
+				}));
+
+				if (guidedFlow === 'RescheduleAppointment') {
+					setResponses((prev) => [
+						...prev,
+						{
+							text: `Selected appointment: ${format(
+								new Date(appointment.appointmentTime),
+								'PPpp'
+							)}`,
+							sender: 'user',
+						},
+						{
+							text: 'Please select a new date and time:',
+							sender: 'ai',
+							type: 'dateTimeSelection',
+							data: {
+								currentPage: 0,
+								appointmentTime: null,
+								selectedTime: null,
+								bookedSlots: [],
+							},
+						},
+					]);
+				} else if (guidedFlow === 'CancelAppointment') {
+					setResponses((prev) => [
+						...prev,
+						{
+							text: `Selected appointment: ${format(
+								new Date(appointment.appointmentTime),
+								'PPpp'
+							)}`,
+							sender: 'user',
+						},
+						{
+							text: 'Please provide a reason for cancellation:',
+							sender: 'ai',
+							type: 'textInput',
+							field: 'cancellationReason',
+						},
+					]);
+					setCurrentInputType('cancellationReason');
+				}
+				break;
+
+			case 'cancellationReason':
+				if (!userInputText?.trim()) {
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Please provide a reason for cancellation:',
+							sender: 'ai',
+							type: 'textInput',
+							field: 'cancellationReason',
+						},
+					]);
+					return;
+				}
+
+				try {
+					// Add user's input to responses first
+					setResponses((prev) => [
+						...prev,
+						{
+							text: userInputText,
+							sender: 'user',
+						},
+					]);
+
+					const response = await fetch(
+						`${config.apiUrl}/api/appointments/${flowData.selectedAppointment._id}/status`,
+						{
+							method: 'PUT',
+							headers: {
+								'Content-Type': 'application/json',
+								Authorization: `Bearer ${localStorage.getItem('token')}`,
+							},
+							body: JSON.stringify({
+								status: 'cancelled',
+								notes: userInputText,
+							}),
+						}
+					);
+
+					if (response.ok) {
+						// Get appointment details for the confirmation message
+						const { title, datetime } = getAppointmentDescription(
+							flowData.selectedAppointment
+						);
+
+						setResponses((prev) => [
+							...prev,
+							{
+								text:
+									`Your appointment has been cancelled successfully:\n\n` +
+									`Treatment: ${title}\n` +
+									`Date and Time: ${datetime}\n` +
+									`Cancellation Reason: ${userInputText}\n\n` +
+									`You will receive a cancellation confirmation email shortly.`,
+								sender: 'ai',
+							},
+						]);
+
+						// Reset states after successful cancellation
+						setGuidedFlow(null);
+						setFlowData({});
+						setCurrentInputType(null);
+					} else {
+						throw new Error('Failed to cancel appointment');
+					}
+				} catch (error) {
+					console.error('Error cancelling appointment:', error);
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Sorry, there was an error cancelling your appointment. Please try again later.',
+							sender: 'ai',
+						},
+					]);
+				}
+				break;
+
+			case 'management':
+				const intent = parseManagementIntent(userInputText);
+				if (intent) {
+					handleGuidedAction('appointmentAction', intent);
+				} else {
+					setResponses((prev) => [
+						...prev,
+						{ text: userInputText, sender: 'user' },
+						{
+							text: 'Would you like to reschedule or cancel an appointment? Please specify.',
+							sender: 'ai',
+							type: 'textInput',
+							field: 'management',
+						},
+					]);
+				}
+				return;
+
+			case 'changeAppointmentPage':
+				if (data.direction === 'prev' || data.direction === 'next') {
+					setResponses((prev) =>
+						prev.map((r) => {
+							if (r.type === 'appointmentSelection') {
+								return {
+									...r,
+									data: {
+										...r.data,
+										currentPage:
+											(r.data.currentPage || 0) +
+											(data.direction === 'next' ? 1 : -1),
+									},
+								};
+							}
+							return r;
+						})
+					);
+				}
+				break;
+
 			default:
 				console.warn('Unhandled guided action:', action);
 		}
@@ -1356,14 +1835,43 @@ const Chatbot = () => {
 				sender: 'ai',
 			},
 		]);
+		resetState();
+		setMode('faq');
+	};
+
+	const resetState = () => {
 		setGuidedFlow(null);
 		setFlowData({});
 		setCurrentStep(0);
 		setUserInput('');
+		setCurrentInputType(null);
+	};
+
+	const handleManageAppointments = () => {
+		// Reset only flow-related states
+		setGuidedFlow(null);
+		setFlowData({});
+		setCurrentStep(0);
+		setCurrentInputType(null);
+
+		// Add new responses without clearing history
+		setResponses((prev) => [
+			...prev,
+			{
+				text: 'Would you like to reschedule or cancel an appointment? You can type your preference or select an option below.',
+				sender: 'ai',
+				type: 'managementOptions',
+				data: [
+					{ value: 'Reschedule', label: 'Reschedule Appointment' },
+					{ value: 'Cancel', label: 'Cancel Appointment' },
+				],
+			},
+		]);
 	};
 
 	const handleUserInput = (userInputText) => {
 		if (currentInputType) {
+			// Handle guided input types
 			switch (currentInputType) {
 				case 'name':
 					if (!userInputText || userInputText.length < 2) {
@@ -1513,16 +2021,65 @@ const Chatbot = () => {
 					setCurrentInputType(null);
 					break;
 
+				case 'management':
+					const intent = parseManagementIntent(userInputText);
+					if (intent) {
+						setResponses((prev) => [
+							...prev,
+							{ text: userInputText, sender: 'user' },
+						]);
+						handleGuidedAction('appointmentAction', intent);
+					} else {
+						setResponses((prev) => [
+							...prev,
+							{ text: userInputText, sender: 'user' },
+							{
+								text: 'Would you like to reschedule or cancel an appointment? Please specify.',
+								sender: 'ai',
+								type: 'textInput',
+								field: 'management',
+							},
+						]);
+					}
+					return;
+
+				case 'cancellationReason':
+					if (!userInputText?.trim()) {
+						setResponses((prev) => [
+							...prev,
+							{
+								text: 'Please provide a reason for cancellation:',
+								sender: 'ai',
+								type: 'textInput',
+								field: 'cancellationReason',
+							},
+						]);
+						return;
+					}
+
+					// Pass the cancellation reason to handleGuidedAction
+					handleGuidedAction('cancellationReason', null, userInputText);
+					break;
+
 				default:
 					console.warn('Unhandled input type:', currentInputType);
 					break;
 			}
 		} else {
 			// Handle regular chat input
-			setResponses((prev) => [
-				...prev,
-				{ text: userInputText || '', sender: 'user' },
-			]);
+			const intent = parseManagementIntent(userInputText);
+			if (intent) {
+				setResponses((prev) => [
+					...prev,
+					{ text: userInputText, sender: 'user' },
+				]);
+				handleGuidedAction('appointmentAction', intent);
+			} else {
+				setResponses((prev) => [
+					...prev,
+					{ text: userInputText || '', sender: 'user' },
+				]);
+			}
 		}
 	};
 
