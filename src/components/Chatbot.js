@@ -202,7 +202,6 @@ const responseVariations = {
 const HUGGING_FACE_API_URL =
 	'https://api-inference.huggingface.co/models/facebook/bart-large-mnli';
 const HUGGING_FACE_TOKEN = process.env.REACT_APP_HUGGING_FACE_TOKEN; // Add this to your .env file
-console.log(HUGGING_FACE_TOKEN);
 
 const Chatbot = () => {
 	const [open, setOpen] = useState(false);
@@ -224,6 +223,9 @@ const Chatbot = () => {
 	});
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [confidence, setConfidence] = useState(1);
+
+	// Add loading state
+	const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
 	const theme = createTheme({
 		palette: {
@@ -1006,6 +1008,7 @@ const Chatbot = () => {
 				// For new appointment booking flow
 				if (guidedFlow === 'BookAppointment' && data.date) {
 					try {
+						setIsLoadingSlots(true); // Start loading
 						const selectedDate = new Date(data.date);
 						if (isNaN(selectedDate.getTime())) {
 							throw new Error('Invalid date selected');
@@ -1048,6 +1051,8 @@ const Chatbot = () => {
 								sender: 'ai',
 							},
 						]);
+					} finally {
+						setIsLoadingSlots(false); // End loading
 					}
 				}
 				// For rescheduling flow
@@ -1110,7 +1115,6 @@ const Chatbot = () => {
 				if (guidedFlow === 'BookAppointment') {
 					try {
 						const token = localStorage.getItem('token');
-						console.log('IN BOOKING FLOW SELECTTIMESLOT');
 						if (!token) {
 							setResponses((prev) => [
 								...prev,
@@ -1390,7 +1394,6 @@ const Chatbot = () => {
 							]);
 							return;
 						}
-						console.log('RESCHDULEEEEE');
 						setResponses((prev) => [
 							...prev,
 							{
@@ -1436,7 +1439,6 @@ const Chatbot = () => {
 				]);
 
 				if (guidedFlow === 'RescheduleAppointment') {
-					console.log(guidedFlow);
 					setResponses((prev) => [
 						...prev,
 						{
@@ -1927,8 +1929,6 @@ const Chatbot = () => {
 			const selectedDate = flowData.appointmentTime
 				? new Date(flowData.appointmentTime)
 				: null;
-			console.log('Initial selectedDate:', selectedDate);
-			console.log('Selected service:', flowData.selectedService); // Add this debug log
 
 			if (!selectedDate) {
 				throw new Error('No appointment date selected');
@@ -1939,7 +1939,6 @@ const Chatbot = () => {
 			// Parse the time from selectedTime
 			if (flowData.selectedTime) {
 				const timeMatch = flowData.selectedTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
-				console.log('Time match results:', timeMatch);
 
 				if (timeMatch) {
 					let hours = parseInt(timeMatch[1]);
@@ -1955,10 +1954,6 @@ const Chatbot = () => {
 
 					// Set the time on appointmentDateTime
 					appointmentDateTime.setHours(hours, minutes, 0, 0);
-					console.log(
-						'Final appointmentDateTime after setting time:',
-						appointmentDateTime
-					);
 				}
 			}
 
@@ -1969,7 +1964,6 @@ const Chatbot = () => {
 				const minutes = date.getMinutes();
 				const isValid =
 					hours >= 9 && (hours < 17 || (hours === 17 && minutes === 0));
-				console.log('Time validation:', { hours, minutes, isValid });
 				return isValid;
 			};
 
@@ -2007,8 +2001,6 @@ const Chatbot = () => {
 				}
 				appointmentData.notes = notes.join('\n\n');
 			}
-
-			console.log('Appointment data:', appointmentData);
 
 			// Make the API call
 			const response = await fetch(`${config.apiUrl}/api/appointments/create`, {
