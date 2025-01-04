@@ -44,6 +44,31 @@ const parseTimeSlot = (timeString) => {
 	return { hours, minutes };
 };
 
+const validateAndFormatPhone = (phone) => {
+	// Remove all non-digit characters except leading +
+	const cleaned = phone.replace(/[^\d+]/g, '');
+
+	// Check if it's a valid Malaysian phone number
+	// Matches:
+	// +60123456789, +6012-345-6789
+	// 0123456789, 012-345-6789
+	const mobileRegex = /^(?:\+?60|0)?1[0-46-9][0-9]{7,8}$/;
+
+	if (!mobileRegex.test(cleaned)) {
+		return { isValid: false, formatted: null };
+	}
+
+	// Standardize to +60 format
+	let formatted = cleaned;
+	if (formatted.startsWith('0')) {
+		formatted = '+60' + formatted.substring(1);
+	} else if (!formatted.startsWith('+')) {
+		formatted = '+' + formatted;
+	}
+
+	return { isValid: true, formatted };
+};
+
 const Chatbot = () => {
 	const [open, setOpen] = useState(false);
 	const [userInput, setUserInput] = useState('');
@@ -757,8 +782,31 @@ const Chatbot = () => {
 				// Handle the sequential flow
 				switch (field) {
 					case 'name':
+						if (!value || value.length < 2) {
+							setResponses((prev) => [
+								...prev,
+								{ text: value || '', sender: 'user' },
+								{
+									text: 'Please enter a valid name (at least 2 characters):',
+									sender: 'ai',
+								},
+							]);
+							return;
+						}
+
+						// Update flowData with the name
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								name: value,
+							},
+						}));
+
+						// Show the name in chat and ask for email
 						setResponses((prev) => [
 							...prev,
+							{ text: value, sender: 'user' },
 							{
 								text: 'Please enter your email address:',
 								sender: 'ai',
@@ -766,13 +814,16 @@ const Chatbot = () => {
 								field: 'email',
 							},
 						]);
+
+						// Change input type to email
+						setCurrentInputType('email');
 						break;
 					case 'email':
-						if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+						if (!value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
 							setResponses((prev) => [
 								...prev,
 								{
-									text: value,
+									text: value || '',
 									sender: 'user',
 								},
 								{
@@ -799,15 +850,18 @@ const Chatbot = () => {
 						]);
 						break;
 					case 'phone':
-						if (!/^\+?[0-9]{8,}$/.test(value)) {
+						const { isValid, formatted } = validateAndFormatPhone(value);
+						if (!isValid) {
 							setResponses((prev) => [
 								...prev,
 								{
-									text: value,
+									text: value || '',
 									sender: 'user',
 								},
 								{
-									text: "That doesn't look like a valid phone number. Please try again (+601X-XXXXXXX):",
+									text:
+										'Please enter a valid Malaysian phone number:\n' +
+										'Examples: 0123456789, +60123456789',
 									sender: 'ai',
 									type: 'textInput',
 									field: 'phone',
@@ -815,8 +869,32 @@ const Chatbot = () => {
 							]);
 							return;
 						}
-						// All details collected, proceed with booking
-						handleFinalBooking(flowData.userData);
+
+						// Update flowData with formatted phone
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								phone: formatted,
+							},
+						}));
+
+						// Continue with the flow...
+						setResponses((prev) => [
+							...prev,
+							{ text: formatted, sender: 'user' },
+							{
+								text: 'Please select your preferred doctor gender:',
+								sender: 'ai',
+								type: 'doctorPreferenceSelection',
+								data: [
+									{ value: 'any', label: 'No Preference' },
+									{ value: 'male', label: 'Male Doctor' },
+									{ value: 'female', label: 'Female Doctor' },
+								],
+							},
+						]);
+						setCurrentInputType(null);
 						break;
 				}
 				break;
@@ -1285,40 +1363,8 @@ const Chatbot = () => {
 	};
 
 	const handleUserInput = (userInputText) => {
-		// For notes, we want to allow empty input
-		if (currentInputType !== 'notes' && !userInputText?.trim()) return;
-
 		if (currentInputType) {
 			switch (currentInputType) {
-				case 'notes':
-					// Handle notes (can be empty)
-					const notesText = userInputText ? userInputText.trim() : '';
-
-					setFlowData((prev) => ({
-						...prev,
-						userData: {
-							...prev.userData,
-							notes: notesText,
-						},
-					}));
-
-					// Show the notes or skipped message in chat
-					setResponses((prev) => [
-						...prev,
-						{
-							text: notesText || 'Skipped additional information',
-							sender: 'user',
-						},
-					]);
-
-					// Proceed with booking
-					handleFinalBooking({
-						...flowData.userData,
-						notes: notesText,
-					});
-					setCurrentInputType(null);
-					break;
-
 				case 'name':
 					if (!userInputText || userInputText.length < 2) {
 						setResponses((prev) => [
@@ -1331,7 +1377,26 @@ const Chatbot = () => {
 						]);
 						return;
 					}
-					// Rest of name case...
+					// Update flowData with name
+					setFlowData((prev) => ({
+						...prev,
+						userData: {
+							...prev.userData,
+							name: userInputText,
+						},
+					}));
+					// Show next prompt
+					setResponses((prev) => [
+						...prev,
+						{ text: userInputText, sender: 'user' },
+						{
+							text: 'Please enter your email address:',
+							sender: 'ai',
+							type: 'textInput',
+							field: 'email',
+						},
+					]);
+					setCurrentInputType('email');
 					break;
 
 				case 'email':
@@ -1345,26 +1410,107 @@ const Chatbot = () => {
 							{
 								text: "That doesn't look like a valid email address. Please try again:",
 								sender: 'ai',
+								type: 'textInput',
+								field: 'email',
 							},
 						]);
 						return;
 					}
-					// Rest of email case...
+					// Update flowData with email
+					setFlowData((prev) => ({
+						...prev,
+						userData: {
+							...prev.userData,
+							email: userInputText,
+						},
+					}));
+					// Show next prompt
+					setResponses((prev) => [
+						...prev,
+						{ text: userInputText, sender: 'user' },
+						{
+							text: 'Please enter your phone number (+601X-XXXXXXX):',
+							sender: 'ai',
+							type: 'textInput',
+							field: 'phone',
+						},
+					]);
+					setCurrentInputType('phone');
 					break;
 
 				case 'phone':
-					if (!userInputText || !/^\+?[0-9]{8,}$/.test(userInputText)) {
+					const { isValid, formatted } = validateAndFormatPhone(userInputText);
+					if (!isValid) {
 						setResponses((prev) => [
 							...prev,
-							{ text: userInputText || '', sender: 'user' },
 							{
-								text: "That doesn't look like a valid phone number. Please try again (+601X-XXXXXXX):",
+								text: userInputText || '',
+								sender: 'user',
+							},
+							{
+								text:
+									'Please enter a valid Malaysian phone number:\n' +
+									'Examples: 0123456789, +60123456789',
 								sender: 'ai',
+								type: 'textInput',
+								field: 'phone',
 							},
 						]);
 						return;
 					}
-					// Rest of phone case...
+
+					// Update flowData with formatted phone
+					setFlowData((prev) => ({
+						...prev,
+						userData: {
+							...prev.userData,
+							phone: formatted,
+						},
+					}));
+
+					// Continue with the flow...
+					setResponses((prev) => [
+						...prev,
+						{ text: formatted, sender: 'user' },
+						{
+							text: 'Please select your preferred doctor gender:',
+							sender: 'ai',
+							type: 'doctorPreferenceSelection',
+							data: [
+								{ value: 'any', label: 'No Preference' },
+								{ value: 'male', label: 'Male Doctor' },
+								{ value: 'female', label: 'Female Doctor' },
+							],
+						},
+					]);
+					setCurrentInputType(null);
+					break;
+
+				case 'notes':
+					// Handle notes (allow empty for skipping)
+					setFlowData((prev) => ({
+						...prev,
+						userData: {
+							...prev.userData,
+							notes: userInputText || '',
+						},
+					}));
+
+					// Show the notes or skipped message in chat
+					setResponses((prev) => [
+						...prev,
+						{
+							text: userInputText || 'Skipped additional information',
+							sender: 'user',
+						},
+					]);
+
+					// Proceed with booking
+					handleFinalBooking({
+						...flowData.userData,
+						notes: userInputText || '',
+					});
+					setCurrentInputType(null);
 					break;
 
 				default:
@@ -1576,7 +1722,7 @@ const Chatbot = () => {
 									: currentInputType === 'email'
 									? 'Enter your email address...'
 									: currentInputType === 'phone'
-									? 'Enter your phone number (+601X-XXXXXXX)...'
+									? 'Enter your phone number (e.g., 0123456789 or +60123456789)...'
 									: currentInputType === 'notes'
 									? 'Type your message or click Send to skip (Optional)...'
 									: 'Type a message...'
@@ -1604,10 +1750,7 @@ const Chatbot = () => {
 								setUserInput('');
 							}}
 							disabled={
-								currentInputType !== 'notes' &&
-								!userInput.trim() &&
-								!currentInputType &&
-								mode !== 'faq'
+								!userInput.trim() && !currentInputType && mode !== 'faq'
 							}
 							sx={{
 								borderRadius: '20px',
