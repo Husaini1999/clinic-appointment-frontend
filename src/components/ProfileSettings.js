@@ -127,8 +127,8 @@ function ProfileSettings() {
 				body: JSON.stringify({
 					...userData,
 					phone: cleanPhone,
-					...(userData.weight && { weight: Number(userData.weight) }),
-					...(userData.height && { height: Number(userData.height) }),
+					...(userData.weight !== 'NA' && { weight: Number(userData.weight) }),
+					...(userData.height !== 'NA' && { height: Number(userData.height) }),
 				}),
 			});
 
