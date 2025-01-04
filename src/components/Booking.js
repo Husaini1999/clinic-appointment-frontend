@@ -35,8 +35,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
 	const [activeStep, setActiveStep] = useState(0);
 	const [formData, setFormData] = useState({
-		treatment: initialService?.name || '',
-		serviceId: initialService?._id || '',
+		treatment: initialService?._id || '',
+		treatmentName: initialService?.name || '',
 		appointmentTime: null,
 		notes: '',
 		name: '',
@@ -125,8 +125,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			setSelectedService(initialService);
 			setFormData((prev) => ({
 				...prev,
-				treatment: initialService.name,
-				serviceId: initialService._id,
+				treatmentName: initialService.name,
+				treatment: initialService._id,
 			}));
 		}
 	}, [open, initialCategory, initialService]);
@@ -259,6 +259,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			// Create appointment with formatted notes
 			const appointmentPayload = {
 				...formData,
+				appointmentTime: formData.appointmentTime.toISOString(), // Just use the direct time
 				phone: cleanPhone,
 				notes: notesWithPreference,
 			};
@@ -288,6 +289,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 					onClose();
 					setFormData({
 						treatment: '',
+						treatmentName: '',
+						serviceId: '',
 						appointmentTime: null,
 						notes: '',
 						name: '',
@@ -306,7 +309,9 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			}
 		} catch (err) {
 			console.error('Error:', err);
-			setError('An error occurred. Please try again.');
+			setError(
+				err.message || 'An error occurred while booking the appointment'
+			);
 		}
 	};
 
@@ -352,8 +357,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		setSelectedService(selected);
 		setFormData((prev) => ({
 			...prev,
-			treatment: selected?.name || '',
-			serviceId: selected?._id || '',
+			treatment: selected?._id || '',
+			treatmentName: selected?.name || '',
 		}));
 	};
 
@@ -363,7 +368,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		setFormData((prev) => ({
 			...prev,
 			treatment: '',
-			serviceId: '',
+			treatmentName: '',
 		}));
 	};
 
@@ -498,7 +503,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 						<FormControl fullWidth required>
 							<InputLabel>Select Service</InputLabel>
 							<Select
-								value={formData.serviceId}
+								value={formData.treatment}
 								onChange={handleTreatmentChange}
 								label="Select Service"
 								disabled={!selectedCategory}

@@ -178,10 +178,10 @@ const responseVariations = {
 		'For your convenience, you can contact us at 018-786 9727 for directions or any inquiries.',
 	],
 	managing: [
-		'Would you like to view, reschedule, or cancel an appointment?',
-		'I can help you manage your booking. Would you like to view, change, or cancel it?',
-		'What would you like to do with your appointment - view, reschedule, or cancel?',
-		'How can I help with your appointment - view details, make changes, or cancel?',
+		'Would you like to reschedule or cancel an appointment?',
+		'I can help you manage your booking. Would you like to reschedule or cancel it?',
+		'What would you like to do with your appointment - reschedule or cancel?',
+		'How can I help with your appointment - reschedule or cancel?',
 	],
 	greeting: [
 		'Hello! How can I assist you with your visit to Primer Cherang Clinic Ampang today?',
@@ -223,9 +223,6 @@ const Chatbot = () => {
 	});
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [confidence, setConfidence] = useState(1);
-
-	// Add loading state
-	const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
 	const theme = createTheme({
 		palette: {
@@ -1008,7 +1005,6 @@ const Chatbot = () => {
 				// For new appointment booking flow
 				if (guidedFlow === 'BookAppointment' && data.date) {
 					try {
-						setIsLoadingSlots(true); // Start loading
 						const selectedDate = new Date(data.date);
 						if (isNaN(selectedDate.getTime())) {
 							throw new Error('Invalid date selected');
@@ -1051,8 +1047,6 @@ const Chatbot = () => {
 								sender: 'ai',
 							},
 						]);
-					} finally {
-						setIsLoadingSlots(false); // End loading
 					}
 				}
 				// For rescheduling flow
@@ -1365,6 +1359,18 @@ const Chatbot = () => {
 					);
 
 					try {
+						const token = localStorage.getItem('token');
+						if (!token) {
+							setResponses((prev) => [
+								...prev,
+								{
+									text: 'You are not logged in, kindly log in or create an account with your email address you have used before.\n\nOr you may contact our support at 018-7869727 for appointments rescheduling or cancellation',
+									sender: 'ai',
+								},
+							]);
+							return;
+						}
+
 						const cachedUser = JSON.parse(localStorage.getItem('user'));
 						const response = await fetch(
 							`${config.apiUrl}/api/appointments/patient?email=${cachedUser.email}`,
@@ -1411,7 +1417,7 @@ const Chatbot = () => {
 						setResponses((prev) => [
 							...prev,
 							{
-								text: 'Sorry, I could not fetch your appointments at this time.',
+								text: 'Sorry, there was an error fetching your appointments. Please try again later.',
 								sender: 'ai',
 							},
 						]);
@@ -1934,7 +1940,7 @@ const Chatbot = () => {
 				throw new Error('No appointment date selected');
 			}
 
-			let appointmentDateTime = new Date(selectedDate); // Define this variable first
+			let appointmentDateTime = new Date(selectedDate);
 
 			// Parse the time from selectedTime
 			if (flowData.selectedTime) {
@@ -1979,7 +1985,7 @@ const Chatbot = () => {
 				email: userData.email,
 				phone: userData.phone,
 				treatment: flowData.selectedService,
-				appointmentTime: appointmentDateTime.toISOString(),
+				appointmentTime: appointmentDateTime.toISOString(), // Send directly in local time
 				notes: [],
 			};
 
