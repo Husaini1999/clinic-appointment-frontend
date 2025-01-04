@@ -8,6 +8,7 @@ import {
 	TextField,
 	IconButton,
 	ThemeProvider,
+	CircularProgress,
 } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
@@ -20,6 +21,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import Fuse from 'fuse.js';
+import axios from 'axios';
 
 const parseTimeSlot = (timeString) => {
 	const [time, period] = timeString.split(' ');
@@ -87,8 +89,35 @@ const getAppointmentDescription = (appointment) => {
 	};
 };
 
-// First, add the intent patterns at the top of your file
+// Add more intent patterns at the top of your file
 const intentPatterns = {
+	greeting: [
+		'hi',
+		'hello',
+		'hey',
+		'good morning',
+		'good afternoon',
+		'good evening',
+		'howdy',
+		"what's up",
+		'hi there',
+	],
+	help: [
+		'help',
+		'what can you do',
+		'what now',
+		'how does this work',
+		'guide me',
+		'what are my options',
+		'what should i do',
+		'faq',
+		'question',
+		'info',
+		'information',
+		'support',
+		'how to',
+		'explain',
+	],
 	booking: [
 		'book appointment',
 		'make appointment',
@@ -97,6 +126,7 @@ const intentPatterns = {
 		'want to visit',
 		'book a slot',
 		'make booking',
+		'see a doctor',
 	],
 	managing: [
 		'manage appointment',
@@ -106,15 +136,6 @@ const intentPatterns = {
 		'view my appointment',
 		'check my booking',
 	],
-	faq: [
-		'help',
-		'question',
-		'info',
-		'information',
-		'how to',
-		'what is',
-		'tell me about',
-	],
 	location: [
 		'where are you',
 		'clinic location',
@@ -122,15 +143,72 @@ const intentPatterns = {
 		'how to get there',
 		'directions',
 		'where is the clinic',
+		'clinic address',
+		'where is primer cherang',
+		'ampang clinic',
+	],
+	contact: [
+		'contact number',
+		'phone number',
+		'how to contact',
+		'call clinic',
+		'reach you',
+		'contact details',
 	],
 };
+
+// Add more response variations
+const responseVariations = {
+	welcome: [
+		"Welcome to Primer Cherang Clinic Ampang's virtual assistant! How can I help you today?",
+		"Hi there! I'm here to assist you with your medical needs at Primer Cherang Clinic Ampang. What can I do for you?",
+		"Hello! Welcome to Primer Cherang Clinic Ampang's virtual assistant. How may I help you?",
+		"Welcome! I'm your virtual healthcare assistant at Primer Cherang Clinic Ampang. What brings you here today?",
+	],
+	booking: [
+		"I'll help you book an appointment. First, please select a service category:",
+		"Let's get you scheduled with one of our doctors. Which service are you interested in?",
+		'I can help you book a visit. What type of service do you need?',
+		"Sure, I'll assist you with booking. Please choose a service category:",
+	],
+	location: [
+		'Our clinic is located at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang, Wilayah Persekutuan Kuala Lumpur. Need directions?',
+		"You can find us at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang. We're in the Desa Pahlawan area.",
+		"We're conveniently located at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang, with parking available.",
+		'For your convenience, you can contact us at 018-786 9727 for directions or any inquiries.',
+	],
+	managing: [
+		'Would you like to view, reschedule, or cancel an appointment?',
+		'I can help you manage your booking. Would you like to view, change, or cancel it?',
+		'What would you like to do with your appointment - view, reschedule, or cancel?',
+		'How can I help with your appointment - view details, make changes, or cancel?',
+	],
+	greeting: [
+		'Hello! How can I assist you with your visit to Primer Cherang Clinic Ampang today?',
+		"Hi there! I'm here to help you with appointments at Primer Cherang Clinic Ampang.",
+		'Welcome to Primer Cherang Clinic Ampang! Would you like to book an appointment or manage an existing one?',
+	],
+	help: [
+		'I can help you with:\n• Booking appointments at Primer Cherang Clinic Ampang\n• Managing your existing appointments\n• Finding our clinic location\n• Contacting us\n\nWhat would you like to do?',
+		"Here's what I can assist you with:\n1. Schedule appointments with our doctors\n2. Reschedule/cancel existing appointments\n3. Get clinic location and directions\n4. Contact information\n\nHow may I help you?",
+	],
+	contact: [
+		'You can reach us at 018-786 9727 during our operating hours.',
+		'Feel free to call us at 018-786 9727 for any immediate inquiries.',
+		'Our clinic contact number is 018-786 9727. How can we assist you?',
+	],
+};
+
+const HUGGING_FACE_API_URL =
+	'https://api-inference.huggingface.co/models/facebook/bart-large-mnli';
+const HUGGING_FACE_TOKEN = process.env.REACT_APP_HUGGING_FACE_TOKEN; // Add this to your .env file
+console.log(HUGGING_FACE_TOKEN);
 
 const Chatbot = () => {
 	const [open, setOpen] = useState(false);
 	const [userInput, setUserInput] = useState('');
 	const [responses, setResponses] = useState([]);
 	const [welcomeMessageShown, setWelcomeMessageShown] = useState(false);
-	const [mode, setMode] = useState('faq');
 	const chatHistoryRef = useRef(null);
 	const [guidedFlow, setGuidedFlow] = useState(null);
 	const [currentStep, setCurrentStep] = useState(0);
@@ -139,6 +217,13 @@ const Chatbot = () => {
 	const emailInputRef = useRef(null);
 	const phoneInputRef = useRef(null);
 	const [currentInputType, setCurrentInputType] = useState(null); // 'name', 'email', 'phone', or null
+	const [conversationContext, setConversationContext] = useState({
+		lastIntent: null,
+		interactionCount: 0,
+		timeOfDay: new Date().getHours(),
+	});
+	const [isProcessing, setIsProcessing] = useState(false);
+	const [confidence, setConfidence] = useState(1);
 
 	const theme = createTheme({
 		palette: {
@@ -151,12 +236,17 @@ const Chatbot = () => {
 		},
 	});
 
+	// Modify your handleOpen function to include the test
 	const handleOpen = () => {
 		setOpen(true);
+
 		if (!welcomeMessageShown) {
+			const welcomeIndex = Math.floor(
+				Math.random() * responseVariations.welcome.length
+			);
 			setResponses([
 				{
-					text: 'Welcome to our AI virtual assistant chatbot! We are here to help you. How may I assist you today?',
+					text: responseVariations.welcome[welcomeIndex],
 					sender: 'ai',
 				},
 			]);
@@ -226,6 +316,7 @@ const Chatbot = () => {
 		{ label: 'Manage Appointments', value: 'ManageAppointment' },
 		{ label: 'Location', value: 'Location' },
 		{ label: 'Contact', value: 'Contact' },
+		{ label: 'Help/FAQ', value: 'Help' },
 	];
 
 	useEffect(() => {
@@ -334,6 +425,39 @@ const Chatbot = () => {
 			return [];
 		}
 	};
+
+	// const GuidedResponse = ({ response, onAction }) => {
+	// 	if (response.type === 'options') {
+	// 		return (
+	// 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+	// 				{response.text && (
+	// 					<Typography sx={{ whiteSpace: 'pre-line' }}>
+	// 						{response.text}
+	// 					</Typography>
+	// 				)}
+	// 				{response.data.map((option, index) => (
+	// 					<Button
+	// 						key={index}
+	// 						variant="outlined"
+	// 						onClick={() => {
+	// 							// Just call onAction with the value, don't simulate user input
+	// 							onAction(option.value);
+	// 						}}
+	// 						sx={{
+	// 							borderRadius: '20px',
+	// 							textTransform: 'none',
+	// 							justifyContent: 'flex-start',
+	// 							px: 2,
+	// 						}}
+	// 					>
+	// 						{option.label}
+	// 					</Button>
+	// 				))}
+	// 			</Box>
+	// 		);
+	// 	}
+	// 	return null;
+	// };
 
 	const GuidedResponse = ({ response, onAction }) => {
 		switch (response.type) {
@@ -664,10 +788,6 @@ const Chatbot = () => {
 
 				return (
 					<Box>
-						<Typography variant="body1" sx={{ mb: 2 }}>
-							{response.text}
-						</Typography>
-
 						{/* Appointments List */}
 						<Box
 							sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}
@@ -752,7 +872,54 @@ const Chatbot = () => {
 	};
 
 	const handleGuidedAction = async (action, data, userInputText) => {
+		// Add the user's selection to the chat history
+		if (
+			action === 'help' ||
+			action === 'booking' ||
+			action === 'managing' ||
+			action === 'location' ||
+			action === 'contact'
+		) {
+			setResponses((prev) => [
+				...prev,
+				{
+					text: data?.label || action.charAt(0).toUpperCase() + action.slice(1),
+					sender: 'user',
+				},
+			]);
+		}
+
 		switch (action) {
+			case 'booking':
+				try {
+					// Set the guided flow
+					setGuidedFlow('BookAppointment');
+
+					// Fetch categories for services
+					const response = await fetch(`${config.apiUrl}/api/categories`);
+					const categories = await response.json();
+
+					setResponses((prev) => [
+						...prev,
+						{
+							text: "Let's get you scheduled. Please select a service category:",
+							sender: 'ai',
+							type: 'categorySelection',
+							data: categories,
+						},
+					]);
+				} catch (error) {
+					console.error('Error fetching categories:', error);
+					setResponses((prev) => [
+						...prev,
+						{
+							text: 'Sorry, I could not fetch the service categories at this time.',
+							sender: 'ai',
+						},
+					]);
+				}
+				break;
+
 			case 'selectCategory':
 				setResponses((prev) => [
 					...prev,
@@ -1223,11 +1390,11 @@ const Chatbot = () => {
 							]);
 							return;
 						}
-
+						console.log('RESCHDULEEEEE');
 						setResponses((prev) => [
 							...prev,
 							{
-								text: `Which appointment would you like to ${action.toLowerCase()}?`,
+								text: `Which appointments would you like to ${action.toLowerCase()}?`,
 								sender: 'ai',
 								type: 'appointmentSelection',
 								data: {
@@ -1902,7 +2069,6 @@ const Chatbot = () => {
 			},
 		]);
 		resetState();
-		setMode('faq');
 	};
 
 	const resetState = () => {
@@ -1924,7 +2090,7 @@ const Chatbot = () => {
 		setResponses((prev) => [
 			...prev,
 			{
-				text: 'Would you like to reschedule or cancel an appointment? You can type your preference or select an option below.',
+				text: 'Would you like to reschedule or cancel an appointment?',
 				sender: 'ai',
 				type: 'managementOptions',
 				data: [
@@ -1935,7 +2101,7 @@ const Chatbot = () => {
 		]);
 	};
 
-	const handleUserInput = (userInputText) => {
+	const handleUserInput = async (userInputText) => {
 		if (currentInputType) {
 			// Handle guided input types
 			switch (currentInputType) {
@@ -2204,81 +2370,123 @@ const Chatbot = () => {
 					break;
 			}
 		} else {
-			// First check for management intents (existing code)
-			const managementIntent = parseManagementIntent(userInputText);
-			if (managementIntent) {
-				setResponses((prev) => [
-					...prev,
-					{ text: userInputText, sender: 'user' },
-				]);
-				handleGuidedAction('appointmentAction', managementIntent);
-				return;
-			}
-
-			// Add new intent detection
-			const detectedIntent = detectIntent(userInputText);
+			setIsProcessing(true); // Show processing state
 			setResponses((prev) => [
 				...prev,
 				{ text: userInputText, sender: 'user' },
 			]);
 
+			// Update conversation context
+			setConversationContext((prev) => ({
+				...prev,
+				interactionCount: prev.interactionCount + 1,
+				timeOfDay: new Date().getHours(),
+			}));
+
+			// First check for management intents
+			const managementIntent = parseManagementIntent(userInputText);
+			if (managementIntent) {
+				handleGuidedAction('appointmentAction', managementIntent);
+				setIsProcessing(false);
+				return;
+			}
+
+			// Detect intent with NLP
+			const detectedIntent = await detectIntent(userInputText);
+
+			// Get response based on confidence
+			const getContextAwareResponse = (intent) => {
+				const responses = responseVariations[intent] || [];
+				const baseResponse =
+					responses[Math.floor(Math.random() * responses.length)];
+
+				// Add context-aware additions based on confidence
+				if (confidence < 0.5) {
+					return `${baseResponse}\n\nIf this isn't what you're looking for, please rephrase your request.`;
+				}
+				return baseResponse;
+			};
+
 			switch (detectedIntent) {
 				case 'booking':
+					const bookingResponse = getContextAwareResponse('booking');
+					setResponses((prev) => [
+						...prev,
+						{ text: bookingResponse, sender: 'ai' },
+					]);
 					handleCategoryClick('BookAppointment');
 					break;
 
 				case 'managing':
+					const managingResponse = getContextAwareResponse('managing');
 					setResponses((prev) => [
 						...prev,
-						{
-							text: 'Would you like to view, reschedule, or cancel an appointment?',
-							sender: 'ai',
-							type: 'textInput',
-							field: 'management',
-						},
+						{ text: managingResponse, sender: 'ai' },
 					]);
 					setCurrentInputType('management');
 					break;
 
-				case 'faq':
-					setMode('faq');
+				case 'location':
+					const locationResponse = getContextAwareResponse('location');
+					setResponses((prev) => [
+						...prev,
+						{ text: locationResponse, sender: 'ai' },
+					]);
+					break;
+
+				case 'greeting':
+					const greetingResponse = getContextAwareResponse('greeting');
 					setResponses((prev) => [
 						...prev,
 						{
-							text: 'Here are some common topics. Please select one:',
+							text: greetingResponse,
 							sender: 'ai',
-							type: 'categorySelection',
-							data: categories,
 						},
 					]);
 					break;
 
-				case 'location':
+				case 'help':
+					const helpResponse = getContextAwareResponse('help');
 					setResponses((prev) => [
 						...prev,
 						{
-							text: 'Our clinic is located at [Your Clinic Address]. You can find directions and more information in the Location section below.',
+							text: helpResponse,
 							sender: 'ai',
+							type: 'options',
+							data: [
+								{ label: 'Book Appointment', value: 'booking' },
+								{ label: 'Manage Appointments', value: 'managing' },
+								{ label: 'Find Clinic Location', value: 'location' },
+								{ label: 'Contact Us', value: 'contact' },
+								{ label: 'Help/FAQ', value: 'help' },
+							],
 						},
 					]);
-					break;
+					break; // Just use break instead of return
 
 				default:
-					// No intent detected, show default help message
+					// Remove the separate default response
 					setResponses((prev) => [
 						...prev,
 						{
 							text:
-								"I'm here to help! You can:\n" +
-								'- Book a new appointment\n' +
-								'- Manage your existing appointments\n' +
-								'- Ask questions about our services\n' +
-								'- Find our location\n\n' +
-								'What would you like to do?',
+								confidence < 0.5
+									? "I'm not quite sure what you're asking for. Here are some things I can help you with:"
+									: "I'm here to help! How can I assist you?",
 							sender: 'ai',
+							type: 'options',
+							data: [
+								{ label: 'Book Appointment', value: 'booking' },
+								{ label: 'Manage Appointments', value: 'managing' },
+								{ label: 'Find Clinic Location', value: 'location' },
+								{ label: 'Contact Us', value: 'contact' },
+								{ label: 'Help/FAQ', value: 'help' },
+							],
 						},
 					]);
 			}
+
+			setIsProcessing(false);
 		}
 	};
 
@@ -2291,17 +2499,87 @@ const Chatbot = () => {
 	};
 
 	// Modify detectIntent to use fuzzy matching
-	const detectIntent = (userInput) => {
-		const text = userInput.toLowerCase();
+	const detectIntent = async (text) => {
+		// First, check for exact matches
+		const lowercaseText = text.toLowerCase().trim();
 
-		for (const [intent, patterns] of Object.entries(intentPatterns)) {
-			const fuzzyMatcher = createFuzzyMatcher(patterns);
-			if (fuzzyMatcher(text)) {
+		// Direct matches for common intents
+		const directMatches = {
+			help: ['help', 'faq', 'what can you do', 'guide me'],
+			booking: ['book', 'appointment', 'schedule', 'book appointment'],
+			managing: ['manage', 'reschedule', 'cancel', 'change appointment'],
+			location: ['where', 'location', 'address', 'clinic location'],
+			contact: ['contact', 'phone', 'call', 'reach'],
+		};
+
+		// Check for exact matches first
+		for (const [intent, patterns] of Object.entries(directMatches)) {
+			if (patterns.some((pattern) => lowercaseText.includes(pattern))) {
+				setConfidence(1.0); // Set high confidence for exact matches
 				return intent;
 			}
 		}
 
-		return null;
+		// If no exact match, use Hugging Face API
+		return await processWithHuggingFace(text);
+	};
+
+	const processWithHuggingFace = async (text) => {
+		try {
+			console.log('📡 Sending request to Hugging Face API...');
+			console.log('Token available:', !!HUGGING_FACE_TOKEN);
+
+			if (!HUGGING_FACE_TOKEN) {
+				console.error('Hugging Face token is missing');
+				return null;
+			}
+
+			const response = await fetch(HUGGING_FACE_API_URL, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${HUGGING_FACE_TOKEN}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					inputs: text,
+					parameters: {
+						candidate_labels: [
+							'greeting',
+							'help',
+							'booking appointment',
+							'managing appointment',
+							'asking location',
+							'contact information',
+						],
+					},
+				}),
+			});
+
+			const data = await response.json();
+			console.log('API Response:', data);
+
+			if (data && data.labels && data.labels.length > 0) {
+				const labelMapping = {
+					greeting: 'greeting',
+					help: 'help',
+					'booking appointment': 'booking',
+					'managing appointment': 'managing',
+					'asking location': 'location',
+					'contact information': 'contact',
+				};
+
+				setConfidence(data.scores[0]);
+				return labelMapping[data.labels[0]];
+			}
+			return null;
+		} catch (error) {
+			console.error('Hugging Face API error details:', {
+				message: error.message,
+				status: error.status,
+				statusText: error.statusText,
+			});
+			return null;
+		}
 	};
 
 	return (
@@ -2449,17 +2727,17 @@ const Chatbot = () => {
 					</Box>
 
 					{/* Sticky Footer for Category Buttons */}
-					<Box
-						sx={{
-							display: 'flex',
-							justifyContent: 'space-between',
-							flexWrap: 'wrap',
-							backgroundColor: 'background.paper',
-							p: 1,
-							borderTop: '1px solid black',
-						}}
-					>
-						{mode === 'faq' && (
+					{/* Remove this section
+						<Box
+							sx={{
+								display: 'flex',
+								justifyContent: 'space-between',
+								flexWrap: 'wrap',
+								backgroundColor: 'background.paper',
+								p: 1,
+								borderTop: '1px solid black',
+							}}
+						>
 							<>
 								{categories.map((category, index) => (
 									<Button
@@ -2480,8 +2758,8 @@ const Chatbot = () => {
 									</Button>
 								))}
 							</>
-						)}
-					</Box>
+						</Box>
+					*/}
 
 					<Box
 						sx={{
@@ -2492,55 +2770,64 @@ const Chatbot = () => {
 							gap: 1,
 						}}
 					>
-						<TextField
-							fullWidth
-							placeholder={
-								currentInputType === 'name'
-									? 'Enter your full name...'
-									: currentInputType === 'email'
-									? 'Enter your email address...'
-									: currentInputType === 'phone'
-									? 'Enter your phone number (e.g., 0123456789 or +60123456789)...'
-									: currentInputType === 'notes'
-									? 'Type your message or click Send to skip (Optional)...'
-									: 'Type a message...'
-							}
-							value={userInput}
-							onChange={(e) => setUserInput(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === 'Enter') {
-									if (currentInputType === 'notes' || userInput.trim()) {
-										handleUserInput(userInput.trim());
-										setUserInput('');
-									}
+						<Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+							<TextField
+								fullWidth
+								placeholder={
+									currentInputType === 'name'
+										? 'Enter your full name...'
+										: currentInputType === 'email'
+										? 'Enter your email address...'
+										: currentInputType === 'phone'
+										? 'Enter your phone number (e.g., 0123456789 or +60123456789)...'
+										: currentInputType === 'notes'
+										? 'Type your message or click Send to skip (Optional)...'
+										: 'Type a message...'
 								}
-							}}
-							sx={{
-								'& .MuiOutlinedInput-root': {
+								value={userInput}
+								onChange={(e) => setUserInput(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter') {
+										if (currentInputType === 'notes' || userInput.trim()) {
+											handleUserInput(userInput.trim());
+											setUserInput('');
+										}
+									}
+								}}
+								sx={{
+									'& .MuiOutlinedInput-root': {
+										borderRadius: '20px',
+									},
+								}}
+								disabled={isProcessing}
+							/>
+							<Button
+								variant="contained"
+								onClick={() => {
+									handleUserInput(userInput);
+									setUserInput('');
+								}}
+								disabled={
+									isProcessing || (!userInput.trim() && !currentInputType)
+								}
+								sx={{
 									borderRadius: '20px',
-								},
-							}}
-						/>
-						<Button
-							variant="contained"
-							onClick={() => {
-								handleUserInput(userInput); // Pass userInput directly
-								setUserInput('');
-							}}
-							disabled={
-								!userInput.trim() && !currentInputType && mode !== 'faq'
-							}
-							sx={{
-								borderRadius: '20px',
-								minWidth: '100px',
-							}}
-						>
-							{currentInputType === 'notes'
-								? userInput.trim()
-									? 'Submit'
-									: 'Skip'
-								: 'Send'}
-						</Button>
+									minWidth: '100px',
+								}}
+							>
+								{isProcessing ? (
+									<CircularProgress size={24} color="inherit" />
+								) : currentInputType === 'notes' ? (
+									userInput.trim() ? (
+										'Submit'
+									) : (
+										'Skip'
+									)
+								) : (
+									'Send'
+								)}
+							</Button>
+						</Box>
 					</Box>
 				</Box>
 			</Modal>
