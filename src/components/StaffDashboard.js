@@ -107,7 +107,7 @@ function StaffDashboard() {
 							title="Confirmed Appointments"
 							value={stats.confirmed}
 							icon={<PendingActionsIcon sx={{ fontSize: 40 }} />}
-							color="warning.main"
+							color="info.main"
 						/>
 					</Grid>
 					<Grid item xs={12} sm={6} md={3}>

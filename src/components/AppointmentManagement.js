@@ -46,6 +46,7 @@ import config from '../config';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 
 const statusDisplayNames = {
 	all: 'All',
@@ -1024,6 +1025,58 @@ function AppointmentManagement({ appointments, onRefresh }) {
 														</IconButton>
 													</Tooltip>
 												)}
+
+												<Tooltip title="Send Reminder via WhatsApp" arrow>
+													<IconButton
+														size="small"
+														color="success"
+														onClick={() => {
+															const formattedPhone = appointment.phone.replace(
+																/\D/g,
+																''
+															);
+															const whatsappNumber = formattedPhone.startsWith(
+																'0'
+															)
+																? `60${formattedPhone.substring(1)}`
+																: formattedPhone;
+
+															// Format date and time
+															const appointmentDate = format(
+																new Date(appointment.appointmentTime),
+																'dd MMM yyyy'
+															);
+															const appointmentTime = format(
+																new Date(appointment.appointmentTime),
+																'p'
+															);
+															// Create message with proper spacing using URL encoding
+															const message = encodeURIComponent(
+																`Assalamualaikum / Greetings,\n\n` +
+																	`I am from *Primer Cherang Klinik Ampang* and would like to remind you of your upcoming appointment with the following details:\n\n` +
+																	`*Name:* ${appointment.patientName}\n` +
+																	`*Treatment:* ${appointment.treatment?.name}\n` +
+																	`*Date:* ${appointmentDate}\n` +
+																	`*Time:* ${appointmentTime}\n\n` +
+																	`Please ensure to arrive 10 minutes earlier for your appointment.\n` +
+																	`If you have any questions or need to reschedule, please contact us.\n\n` +
+																	`Thank you for choosing our clinic. See you soon!`
+															);
+
+															window.open(
+																`https://wa.me/${whatsappNumber}?text=${message}`,
+																'_blank'
+															);
+														}}
+														sx={{
+															'&.MuiIconButton-colorSuccess': {
+																color: '#25D366',
+															},
+														}}
+													>
+														<WhatsAppIcon />
+													</IconButton>
+												</Tooltip>
 											</Box>
 										)}
 								</TableCell>

@@ -30,7 +30,7 @@ import { addDays, set, format, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
 import config from '../config';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const theme = useTheme();
@@ -62,6 +62,15 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		initialCategory?._id || ''
 	);
 	const [bookedSlots, setBookedSlots] = useState([]);
+	const [preFilledData, setPreFilledData] = useState({
+		name: '',
+		email: '',
+		phone: '',
+		address: '',
+		weight: '',
+		height: '',
+	});
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -78,6 +87,14 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 
 					if (response.ok) {
 						const userData = await response.json();
+						setPreFilledData({
+							name: userData.name || '',
+							email: userData.email || '',
+							phone: userData.phone || '',
+							address: userData.address || '',
+							weight: userData.weight || '',
+							height: userData.height || '',
+						});
 						setFormData((prevData) => ({
 							...prevData,
 							name: userData.name || '',
@@ -161,28 +178,32 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				return;
 			}
 
-			try {
-				// Check if email exists in User collection
-				const response = await fetch(
-					`${config.apiUrl}/api/auth/check-email/${formData.email}`
-				);
-				const data = await response.json();
-
-				if (data.exists) {
-					setError(
-						'This email is already registered. Please login to book an appointment.'
+			// Only check for existing email if user is NOT logged in
+			if (!localStorage.getItem('token')) {
+				try {
+					// Check if email exists in User collection
+					const response = await fetch(
+						`${config.apiUrl}/api/auth/check-email/${formData.email}`
 					);
+					const data = await response.json();
+
+					if (data.exists) {
+						setError(
+							'This email is already registered. Please login to book an appointment.'
+						);
+						return;
+					}
+				} catch (error) {
+					console.error('Error checking email:', error);
+					setError('An error occurred. Please try again.');
 					return;
 				}
-
-				// Clear any existing errors and proceed
-				setError('');
-				setEmailError('');
-				setActiveStep((prevStep) => prevStep + 1);
-			} catch (error) {
-				console.error('Error checking email:', error);
-				setError('An error occurred. Please try again.');
 			}
+
+			// Clear any existing errors and proceed
+			setError('');
+			setEmailError('');
+			setActiveStep((prevStep) => prevStep + 1);
 		} else if (activeStep === steps.length - 1) {
 			handleSubmit();
 		} else {
@@ -327,9 +348,16 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			const data = await response.json();
 
 			if (response.ok) {
-				setSuccess(
-					'Appointment booked successfully! We will send a confirmation email shortly.'
-				);
+				// Personalized success message based on login status
+				if (localStorage.getItem('token')) {
+					setSuccess(
+						'Appointment booked successfully! You can view and manage your appointments in your dashboard.'
+					);
+				} else {
+					setSuccess(
+						'Appointment booked successfully! Create an account to manage your appointments and access additional features.'
+					);
+				}
 
 				// Reset all states after successful submission
 				setTimeout(() => {
@@ -354,9 +382,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 					setPhoneError('');
 					setSelectedService(null);
 					setSelectedCategory('');
-					// Reset booked slots if needed
 					setBookedSlots([]);
-				}, 1000);
+
+					// Navigate to dashboard if user is logged in
+					if (localStorage.getItem('token')) {
+						navigate('/dashboard');
+					}
+				}, 4000);
 			} else {
 				setError(data.message);
 			}
@@ -468,7 +500,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 								setFormData({ ...formData, name: e.target.value })
 							}
 							required
-							disabled={!!formData.name && localStorage.getItem('token')}
+							disabled={!!localStorage.getItem('token') && !!preFilledData.name}
 							sx={{
 								'& .MuiInputBase-input.Mui-disabled': {
 									bgcolor: 'rgba(0, 0, 0, 0.05)',
@@ -485,7 +517,9 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 							error={!!emailError}
 							helperText={emailError}
 							required
-							disabled={!!formData.email && localStorage.getItem('token')}
+							disabled={
+								!!localStorage.getItem('token') && !!preFilledData.email
+							}
 							sx={{
 								'& .MuiInputBase-input.Mui-disabled': {
 									bgcolor: 'rgba(0, 0, 0, 0.05)',
@@ -501,7 +535,9 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 							error={!!phoneError}
 							helperText={phoneError}
 							required
-							disabled={!!formData.phone && localStorage.getItem('token')}
+							disabled={
+								!!localStorage.getItem('token') && !!preFilledData.phone
+							}
 							sx={{
 								'& .MuiInputBase-input.Mui-disabled': {
 									bgcolor: 'rgba(0, 0, 0, 0.05)',
@@ -521,7 +557,9 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 							}
 							required
 							placeholder="Please enter your complete address including street, city, state, and postal code."
-							disabled={!!formData.address && localStorage.getItem('token')}
+							disabled={
+								!!localStorage.getItem('token') && !!preFilledData.address
+							}
 							sx={{
 								'& .MuiInputBase-root.Mui-disabled': {
 									bgcolor: 'rgba(0, 0, 0, 0.05)',
@@ -534,18 +572,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 						<TextField
 							fullWidth
 							label="Weight (kg)"
-							type="number"
 							value={formData.weight}
 							onChange={(e) =>
 								setFormData({ ...formData, weight: e.target.value })
 							}
-							InputProps={{
-								endAdornment: (
-									<InputAdornment position="end">kg</InputAdornment>
-								),
-							}}
-							placeholder="Optional"
-							disabled={!!formData.weight && localStorage.getItem('token')}
+							disabled={
+								!!localStorage.getItem('token') && !!preFilledData.weight
+							}
 							sx={{
 								'& .MuiInputBase-input.Mui-disabled': {
 									bgcolor: 'rgba(0, 0, 0, 0.05)',
@@ -556,18 +589,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 						<TextField
 							fullWidth
 							label="Height (cm)"
-							type="number"
 							value={formData.height}
 							onChange={(e) =>
 								setFormData({ ...formData, height: e.target.value })
 							}
-							InputProps={{
-								endAdornment: (
-									<InputAdornment position="end">cm</InputAdornment>
-								),
-							}}
-							placeholder="Optional"
-							disabled={!!formData.height && localStorage.getItem('token')}
+							disabled={
+								!!localStorage.getItem('token') && !!preFilledData.height
+							}
 							sx={{
 								'& .MuiInputBase-input.Mui-disabled': {
 									bgcolor: 'rgba(0, 0, 0, 0.05)',
