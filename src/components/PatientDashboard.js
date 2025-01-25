@@ -21,6 +21,11 @@ import {
 	IconButton,
 	useTheme,
 	useMediaQuery,
+	TableSortLabel,
+	FormControl,
+	InputLabel,
+	Select,
+	MenuItem,
 } from '@mui/material';
 import { format } from 'date-fns';
 import NotesHistory from './NotesHistory';
@@ -32,6 +37,7 @@ import config from '../config';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import ClearIcon from '@mui/icons-material/Clear';
 
 const statusDisplayNames = {
 	all: 'All',
@@ -217,6 +223,12 @@ function Dashboard() {
 		reason: '',
 		newDateTime: null,
 	});
+	const [timeFilter, setTimeFilter] = useState('all');
+	const [sortValue, setSortValue] = useState('appointmentTime_asc');
+	const [upcomingOrderBy, setUpcomingOrderBy] = useState('appointmentTime');
+	const [upcomingOrder, setUpcomingOrder] = useState('asc');
+	const [pastOrderBy, setPastOrderBy] = useState('appointmentTime');
+	const [pastOrder, setPastOrder] = useState('desc');
 
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -353,24 +365,59 @@ function Dashboard() {
 		);
 	};
 
-	const sortAppointmentsByDate = (appointments, order = 'asc') => {
+	const filterAppointmentsByDay = (appointments) => {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+
+		switch (timeFilter) {
+			case 'today':
+				return appointments.filter((appointment) => {
+					const appointmentDate = new Date(appointment.appointmentTime);
+					appointmentDate.setHours(0, 0, 0, 0);
+					return appointmentDate.getTime() === today.getTime();
+				});
+			case 'tomorrow':
+				return appointments.filter((appointment) => {
+					const appointmentDate = new Date(appointment.appointmentTime);
+					appointmentDate.setHours(0, 0, 0, 0);
+					return appointmentDate.getTime() === tomorrow.getTime();
+				});
+			default:
+				return appointments;
+		}
+	};
+
+	const sortAppointmentsByDate = (appointments, sortOrder, sortBy) => {
+		if (!sortBy) return appointments;
+
 		return [...appointments].sort((a, b) => {
-			const dateA = new Date(a.appointmentTime);
-			const dateB = new Date(b.appointmentTime);
-			return order === 'asc'
-				? dateA.getTime() - dateB.getTime()
-				: dateB.getTime() - dateA.getTime();
+			let result;
+			if (sortBy === 'appointmentTime') {
+				result = new Date(a.appointmentTime) - new Date(b.appointmentTime);
+			} else if (sortBy === 'treatment') {
+				result = (a.treatment?.name || '').localeCompare(
+					b.treatment?.name || ''
+				);
+			} else {
+				result = (a[sortBy] || '').localeCompare(b[sortBy] || '');
+			}
+			return sortOrder === 'asc' ? result : -result;
 		});
 	};
 
 	const filteredUpcomingAppointments = sortAppointmentsByDate(
-		filterAppointmentsByStatus(upcomingAppointments),
-		'asc' // Ascending order for upcoming appointments
+		filterAppointmentsByDay(filterAppointmentsByStatus(upcomingAppointments)),
+		upcomingOrder,
+		upcomingOrderBy
 	);
 
 	const filteredPastAppointments = sortAppointmentsByDate(
 		filterAppointmentsByStatus(pastAppointments),
-		'desc' // Descending order for past appointments
+		pastOrder,
+		pastOrderBy
 	);
 
 	const paginateAppointments = (appointments, page) => {
@@ -411,6 +458,18 @@ function Dashboard() {
 			backgroundColor: (theme) => theme.palette.primary.main,
 			color: 'white',
 			fontWeight: 'bold',
+			'& .MuiTableSortLabel-root': {
+				color: 'white',
+				'&:hover': {
+					color: 'rgba(255, 255, 255, 0.8)',
+				},
+				'&.Mui-active': {
+					color: 'white',
+					'& .MuiTableSortLabel-icon': {
+						color: 'white !important',
+					},
+				},
+			},
 		},
 		'& .hide-on-mobile': {
 			display: {
@@ -481,6 +540,78 @@ function Dashboard() {
 		}
 	};
 
+	const handleUpcomingSort = (property) => {
+		const isAsc = upcomingOrderBy === property && upcomingOrder === 'asc';
+		const isDesc = upcomingOrderBy === property && upcomingOrder === 'desc';
+
+		if (isDesc) {
+			setUpcomingOrder('asc');
+			setUpcomingOrderBy('');
+		} else {
+			setUpcomingOrder(isAsc ? 'desc' : 'asc');
+			setUpcomingOrderBy(property);
+		}
+	};
+
+	const handlePastSort = (property) => {
+		const isAsc = pastOrderBy === property && pastOrder === 'asc';
+		const isDesc = pastOrderBy === property && pastOrder === 'desc';
+
+		if (isDesc) {
+			setPastOrder('asc');
+			setPastOrderBy('');
+		} else {
+			setPastOrder(isAsc ? 'desc' : 'asc');
+			setPastOrderBy(property);
+		}
+	};
+
+	const handleSort = (value) => {
+		setSortValue(value); // Always update sortValue
+
+		if (!value) {
+			setUpcomingOrderBy('');
+			setUpcomingOrder('asc');
+			setPastOrderBy('');
+			setPastOrder('desc');
+			return;
+		}
+
+		const [field, direction] = value.split('_');
+		setUpcomingOrderBy(field);
+		setUpcomingOrder(direction);
+		setPastOrderBy(field);
+		setPastOrder(direction);
+	};
+
+	const clearAllFilters = () => {
+		setTimeFilter('all');
+		setStatusFilter('all');
+		setSortValue('appointmentTime_asc');
+		setUpcomingOrderBy('appointmentTime');
+		setUpcomingOrder('asc');
+		setPastOrderBy('appointmentTime');
+		setPastOrder('desc');
+	};
+
+	// Add time filter options array
+	const timeFilterOptions = ['all', 'today', 'tomorrow'];
+
+	// Add time display names object
+	const timeDisplayNames = {
+		all: 'All',
+		today: 'Today',
+		tomorrow: 'Tomorrow',
+	};
+
+	// Add sort options
+	const sortOptions = [
+		{ value: 'appointmentTime_asc', label: 'Date & Time (Earliest First)' },
+		{ value: 'appointmentTime_desc', label: 'Date & Time (Latest First)' },
+		{ value: 'treatment_asc', label: 'Treatment (A-Z)' },
+		{ value: 'treatment_desc', label: 'Treatment (Z-A)' },
+	];
+
 	return (
 		<Container
 			maxWidth="lg"
@@ -508,23 +639,115 @@ function Dashboard() {
 
 			<Box
 				sx={{
-					...mobileResponsiveStyles.filterBox,
-					mb: 3,
+					display: 'flex',
+					flexDirection: 'row',
+					alignItems: 'flex-start',
+					gap: 3,
+					mb: 4,
+					backgroundColor: 'background.paper',
+					p: 3, // Increased padding
+					borderRadius: 1,
+					boxShadow: 1,
+					flexWrap: 'wrap', // Allow wrapping on smaller screens
 				}}
 			>
-				<Typography variant="body1">Filter by Status:</Typography>
-				<Box sx={mobileResponsiveStyles.chipGroup}>
-					{statusOptions.map((status) => (
-						<Chip
-							key={status}
-							label={statusDisplayNames[status]}
-							onClick={() => setStatusFilter(status)}
-							color={statusFilter === status ? 'primary' : 'default'}
-							sx={{
-								fontSize: { xs: '0.75rem', sm: '0.875rem' },
-							}}
-						/>
-					))}
+				{/* Left Column - Filters */}
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						gap: 3,
+						flex: '1', // Takes more space for filters
+						maxWidth: '60%', // Added max width
+					}}
+				>
+					{/* Time Filter */}
+					<Box>
+						<Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+							Filter by Time:
+						</Typography>
+						<Box sx={mobileResponsiveStyles.chipGroup}>
+							{timeFilterOptions.map((time) => (
+								<Chip
+									key={time}
+									label={timeDisplayNames[time]}
+									onClick={() => setTimeFilter(time)}
+									color={timeFilter === time ? 'primary' : 'default'}
+									sx={{
+										fontSize: { xs: '0.75rem', sm: '0.875rem' },
+										m: 0.5,
+									}}
+								/>
+							))}
+						</Box>
+					</Box>
+
+					{/* Status Filter */}
+					<Box>
+						<Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+							Filter by Status:
+						</Typography>
+						<Box sx={mobileResponsiveStyles.chipGroup}>
+							{statusOptions.map((status) => (
+								<Chip
+									key={status}
+									label={statusDisplayNames[status]}
+									onClick={() => setStatusFilter(status)}
+									color={statusFilter === status ? 'primary' : 'default'}
+									sx={{
+										fontSize: { xs: '0.75rem', sm: '0.875rem' },
+										m: 0.5,
+									}}
+								/>
+							))}
+						</Box>
+					</Box>
+				</Box>
+
+				{/* Right Column - Sort and Clear */}
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'stretch',
+						gap: 6,
+						flex: '1', // Takes less space
+						minWidth: '250px', // Ensures dropdown doesn't get too narrow
+					}}
+				>
+					{/* Sort Dropdown */}
+					<Box>
+						<Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+							Sort by:
+						</Typography>
+						<FormControl size="small" fullWidth>
+							<Select
+								value={sortValue}
+								onChange={(e) => handleSort(e.target.value)}
+								displayEmpty
+							>
+								{sortOptions.map((option) => (
+									<MenuItem key={option.value} value={option.value}>
+										{option.label}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					</Box>
+
+					{/* Clear Filters Button */}
+					<Button
+						variant="outlined"
+						onClick={clearAllFilters}
+						startIcon={<ClearIcon />}
+						size="small"
+						sx={{
+							mt: 'auto', // Pushes button to bottom
+							alignSelf: 'flex-end',
+						}}
+					>
+						Clear All Filters
+					</Button>
 				</Box>
 			</Box>
 
@@ -547,10 +770,28 @@ function Dashboard() {
 						<TableRow>
 							<TableCell width="5%">No.</TableCell>
 							<TableCell width="20%" align="center">
-								Treatment
+								<TableSortLabel
+									active={upcomingOrderBy === 'treatment'}
+									direction={
+										upcomingOrderBy === 'treatment' ? upcomingOrder : 'asc'
+									}
+									onClick={() => handleUpcomingSort('treatment')}
+								>
+									Treatment
+								</TableSortLabel>
 							</TableCell>
 							<TableCell width="20%" align="center">
-								Date & Time
+								<TableSortLabel
+									active={upcomingOrderBy === 'appointmentTime'}
+									direction={
+										upcomingOrderBy === 'appointmentTime'
+											? upcomingOrder
+											: 'asc'
+									}
+									onClick={() => handleUpcomingSort('appointmentTime')}
+								>
+									Date & Time
+								</TableSortLabel>
 							</TableCell>
 							<TableCell width="15%" align="center">
 								Status
