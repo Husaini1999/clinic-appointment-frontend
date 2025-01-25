@@ -20,6 +20,7 @@ import {
 	useTheme,
 	useMediaQuery,
 	InputAdornment,
+	Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -29,6 +30,7 @@ import { addDays, set, format, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
 import config from '../config';
+import { Link } from 'react-router-dom';
 
 function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const theme = useTheme();
@@ -424,6 +426,38 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			case 0:
 				return (
 					<Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+						{localStorage.getItem('token') && (
+							<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+								<Typography variant="h6">Personal Information</Typography>
+								<Tooltip
+									title={
+										<Typography>
+											To update your personal information, please go to{' '}
+											<Link
+												to="/profile"
+												style={{
+													color: 'inherit',
+													textDecoration: 'underline',
+												}}
+												onClick={() => onClose()}
+											>
+												Profile Settings
+											</Link>
+										</Typography>
+									}
+									placement="right"
+									arrow
+								>
+									<InfoIcon
+										color="primary"
+										sx={{
+											cursor: 'help',
+											fontSize: '1.2rem',
+										}}
+									/>
+								</Tooltip>
+							</Box>
+						)}
 						<TextField
 							fullWidth
 							label="Full Name"
@@ -475,15 +509,25 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 						/>
 						<TextField
 							fullWidth
-							label="Full Address"
+							label="Address"
 							multiline
-							rows={2}
+							minRows={2}
+							maxRows={4}
 							value={formData.address}
 							onChange={(e) =>
 								setFormData({ ...formData, address: e.target.value })
 							}
 							required
 							placeholder="Please enter your complete address including street, city, state, and postal code."
+							disabled={!!formData.address && localStorage.getItem('token')}
+							sx={{
+								'& .MuiInputBase-root.Mui-disabled': {
+									bgcolor: 'rgba(0, 0, 0, 0.05)',
+								},
+								'& .MuiInputBase-input.Mui-disabled': {
+									WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
+								},
+							}}
 						/>
 						<TextField
 							fullWidth
