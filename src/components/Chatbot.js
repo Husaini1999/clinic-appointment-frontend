@@ -1931,8 +1931,7 @@ const Chatbot = () => {
 									`Your appointment has been cancelled successfully:\n\n` +
 									`Treatment: ${title}\n` +
 									`Date and Time: ${datetime}\n` +
-									`Cancellation Reason: ${userInputText}\n\n` +
-									`You will receive a cancellation confirmation email shortly.`,
+									`Cancellation Reason: ${userInputText}\n\n`,
 								sender: 'ai',
 							},
 						]);
