@@ -49,7 +49,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 const statusDisplayNames = {
 	all: 'All',
-	pending: 'Pending',
+	confirmed: 'Confirmed',
 	completed: 'Completed',
 	no_show: 'No Show',
 	cancelled: 'Cancelled',
@@ -327,7 +327,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	];
 
 	// Get all possible statuses
-	const statuses = ['all', 'pending', 'completed', 'no_show', 'cancelled'];
+	const statuses = ['all', 'confirmed', 'completed', 'no_show', 'cancelled'];
 
 	// Enhanced filter logic
 	const filteredAppointments = appointments.filter((apt) => {
@@ -422,10 +422,10 @@ function AppointmentManagement({ appointments, onRefresh }) {
 
 	const getStatusColor = (status) => {
 		switch (status) {
+			case 'confirmed':
+				return 'info';
 			case 'completed':
 				return 'success';
-			case 'pending':
-				return 'warning';
 			case 'no_show':
 				return 'error';
 			case 'cancelled':
@@ -971,7 +971,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 													},
 												}}
 											>
-												{appointment.status === 'pending' && (
+												{appointment.status === 'confirmed' && (
 													<>
 														<Tooltip title="Mark as Complete" arrow>
 															<IconButton

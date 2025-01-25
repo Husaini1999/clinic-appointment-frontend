@@ -35,7 +35,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 const statusDisplayNames = {
 	all: 'All',
-	pending: 'Pending',
+	confirmed: 'Confirmed',
 	completed: 'Completed',
 	no_show: 'No Show',
 	cancelled: 'Cancelled',
@@ -254,10 +254,10 @@ function Dashboard() {
 
 	const getStatusColor = (status) => {
 		switch (status) {
+			case 'confirmed':
+				return 'info';
 			case 'completed':
 				return 'success';
-			case 'pending':
-				return 'warning';
 			case 'no_show':
 				return 'error';
 			case 'cancelled':
@@ -338,7 +338,13 @@ function Dashboard() {
 		(appointment) => new Date(appointment.appointmentTime) < today
 	);
 
-	const statusOptions = ['all', 'pending', 'completed', 'no_show', 'cancelled'];
+	const statusOptions = [
+		'all',
+		'confirmed',
+		'completed',
+		'no_show',
+		'cancelled',
+	];
 
 	const filterAppointmentsByStatus = (appointments) => {
 		if (statusFilter === 'all') return appointments;
@@ -592,7 +598,7 @@ function Dashboard() {
 											verticalAlign: 'middle',
 										}}
 									>
-										{appointment.status === 'pending' && (
+										{appointment.status === 'confirmed' && (
 											<Box
 												sx={{
 													display: 'flex',

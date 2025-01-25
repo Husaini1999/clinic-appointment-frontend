@@ -1464,7 +1464,7 @@ const Chatbot = () => {
 
 						// Sort appointments by date in ascending order
 						const sortedAppointments = appointments
-							.filter((apt) => apt.status === 'pending')
+							.filter((apt) => apt.status === 'confirmed')
 							.sort(
 								(a, b) =>
 									new Date(a.appointmentTime) - new Date(b.appointmentTime)
@@ -2082,6 +2082,7 @@ const Chatbot = () => {
 				address: userData.address,
 				treatment: flowData.selectedService,
 				appointmentTime: appointmentDateTime.toISOString(), // Send directly in local time
+				status: 'confirmed', // Change default status to confirmed
 				notes: [],
 			};
 

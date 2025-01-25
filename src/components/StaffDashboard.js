@@ -32,7 +32,7 @@ function StaffDashboard() {
 	const [activeTab, setActiveTab] = useState(0);
 	const [appointments, setAppointments] = useState([]);
 	const [stats, setStats] = useState({
-		pending: 0,
+		confirmed: 0,
 		completed: 0,
 		no_show: 0,
 		totalPatients: 0,
@@ -56,22 +56,16 @@ function StaffDashboard() {
 				setAppointments(sortedData);
 
 				setStats({
-					pending: sortedData.filter((apt) => apt.status === 'pending').length,
-					completed:
-						sortedData.filter((apt) => apt.status === 'completed').length || 0,
-					no_show:
-						sortedData.filter((apt) => apt.status === 'no_show').length || 0,
+					confirmed: sortedData.filter((apt) => apt.status === 'confirmed')
+						.length,
+					completed: sortedData.filter((apt) => apt.status === 'completed')
+						.length,
+					no_show: sortedData.filter((apt) => apt.status === 'no_show').length,
 					totalPatients: new Set(sortedData.map((apt) => apt.email)).size,
 				});
 			}
 		} catch (error) {
-			console.error('Error fetching appointments:', error);
-			setStats({
-				pending: 0,
-				completed: 0,
-				no_show: 0,
-				totalPatients: 0,
-			});
+			console.error('Error:', error);
 		}
 	}, []);
 
@@ -110,8 +104,8 @@ function StaffDashboard() {
 				<Grid container spacing={3} sx={{ mb: 4 }}>
 					<Grid item xs={12} sm={6} md={3}>
 						<StatCard
-							title="Pending Appointments"
-							value={stats.pending}
+							title="Confirmed Appointments"
+							value={stats.confirmed}
 							icon={<PendingActionsIcon sx={{ fontSize: 40 }} />}
 							color="warning.main"
 						/>

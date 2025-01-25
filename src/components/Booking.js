@@ -301,8 +301,10 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			}
 
 			// Create appointment with formatted notes
-			const appointmentPayload = {
+			const appointmentData = {
 				...formData,
+				status: 'confirmed', // Set default status to confirmed
+				doctorPreference,
 				appointmentTime: formData.appointmentTime.toISOString(), // Just use the direct time
 				phone: cleanPhone,
 				notes: notesWithPreference,
@@ -310,8 +312,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 
 			// Only include weight/height in appointment if user is not logged in
 			if (!token) {
-				appointmentPayload.weight = formData.weight || null;
-				appointmentPayload.height = formData.height || null;
+				appointmentData.weight = formData.weight || null;
+				appointmentData.height = formData.height || null;
 			}
 
 			const response = await fetch(`${config.apiUrl}/api/appointments/create`, {
@@ -319,7 +321,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify(appointmentPayload),
+				body: JSON.stringify(appointmentData),
 			});
 
 			const data = await response.json();
