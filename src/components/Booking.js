@@ -44,6 +44,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		phone: '',
 		weight: '',
 		height: '',
+		address: '',
 	});
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState('');
@@ -82,6 +83,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 							phone: userData.phone || '',
 							weight: userData.weight || '',
 							height: userData.height || '',
+							address: userData.address || '',
 						}));
 					}
 				} catch (error) {
@@ -138,8 +140,48 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		'Additional Information',
 	];
 
-	const handleNext = () => {
-		if (activeStep === steps.length - 1) {
+	const handleNext = async () => {
+		if (activeStep === 0) {
+			// Validate required fields for step 1
+			if (
+				!formData.name ||
+				!formData.email ||
+				!formData.phone ||
+				!formData.address
+			) {
+				setError('Please fill in all required fields');
+				return;
+			}
+
+			// Validate email format
+			if (!isValidEmail(formData.email)) {
+				setEmailError('Please enter a valid email address');
+				return;
+			}
+
+			try {
+				// Check if email exists in User collection
+				const response = await fetch(
+					`${config.apiUrl}/api/auth/check-email/${formData.email}`
+				);
+				const data = await response.json();
+
+				if (data.exists) {
+					setError(
+						'This email is already registered. Please login to book an appointment.'
+					);
+					return;
+				}
+
+				// Clear any existing errors and proceed
+				setError('');
+				setEmailError('');
+				setActiveStep((prevStep) => prevStep + 1);
+			} catch (error) {
+				console.error('Error checking email:', error);
+				setError('An error occurred. Please try again.');
+			}
+		} else if (activeStep === steps.length - 1) {
 			handleSubmit();
 		} else {
 			setActiveStep((prevStep) => prevStep + 1);
@@ -244,7 +286,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 						},
 						body: JSON.stringify({
 							phone: cleanPhone,
-							// Only include weight/height if they are provided
+							address: formData.address,
 							...(formData.weight && { weight: formData.weight }),
 							...(formData.height && { height: formData.height }),
 						}),
@@ -285,12 +327,12 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 					'Appointment booked successfully! We will send a confirmation email shortly.'
 				);
 
+				// Reset all states after successful submission
 				setTimeout(() => {
 					onClose();
 					setFormData({
 						treatment: '',
 						treatmentName: '',
-						serviceId: '',
 						appointmentTime: null,
 						notes: '',
 						name: '',
@@ -298,20 +340,25 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 						phone: '',
 						weight: '',
 						height: '',
+						address: '',
 					});
-					setDoctorPreference('any'); // Reset doctor preference
+					setDoctorPreference('any');
 					setActiveStep(0);
-					setSuccess('');
 					setError('');
+					setSuccess('');
+					setEmailError('');
+					setPhoneError('');
+					setSelectedService(null);
+					setSelectedCategory('');
+					// Reset booked slots if needed
+					setBookedSlots([]);
 				}, 1000);
 			} else {
 				setError(data.message);
 			}
-		} catch (err) {
-			console.error('Error:', err);
-			setError(
-				err.message || 'An error occurred while booking the appointment'
-			);
+		} catch (error) {
+			console.error('Error booking appointment:', error);
+			setError(error.message || 'Failed to book appointment');
 		}
 	};
 
@@ -425,6 +472,18 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 									WebkitTextFillColor: 'rgba(0, 0, 0, 0.6)',
 								},
 							}}
+						/>
+						<TextField
+							fullWidth
+							label="Full Address"
+							multiline
+							rows={2}
+							value={formData.address}
+							onChange={(e) =>
+								setFormData({ ...formData, address: e.target.value })
+							}
+							required
+							placeholder="Please enter your complete address including street, city, state, and postal code."
 						/>
 						<TextField
 							fullWidth
@@ -828,6 +887,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 					formData.name &&
 					formData.email &&
 					formData.phone &&
+					formData.address &&
 					!emailError &&
 					!phoneError
 				);
@@ -872,6 +932,12 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			fullScreen={fullScreen}
 			maxWidth="sm"
 			fullWidth
+			sx={{
+				'& .MuiDialog-paper': {
+					overflowX: 'hidden', // Prevent horizontal scrolling
+					margin: { xs: 2, sm: 3 }, // Responsive margins
+				},
+			}}
 		>
 			<DialogTitle
 				sx={{
@@ -900,7 +966,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				</IconButton>
 			</DialogTitle>
 
-			<DialogContent sx={{ mt: 2, p: 3 }}>
+			<DialogContent
+				sx={{
+					mt: 2,
+					p: { xs: 2, sm: 3 }, // Responsive padding
+					overflowX: 'hidden', // Prevent horizontal scrolling
+				}}
+			>
 				{(error || success) && (
 					<Alert
 						severity={error ? 'error' : 'success'}
@@ -936,7 +1008,13 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				<Box sx={{ minHeight: '200px' }}>{getStepContent(activeStep)}</Box>
 			</DialogContent>
 
-			<DialogActions sx={{ p: 3, gap: 1 }}>
+			<DialogActions
+				sx={{
+					p: { xs: 2, sm: 3 },
+					gap: 1,
+					overflowX: 'hidden', // Prevent horizontal scrolling
+				}}
+			>
 				<Button
 					disabled={activeStep === 0}
 					onClick={handleBack}

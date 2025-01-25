@@ -1990,8 +1990,9 @@ const Chatbot = () => {
 				name: userData.name,
 				email: userData.email,
 				phone: userData.phone,
+				address: userData.address || 'Not provided', // Add address field
 				treatment: flowData.selectedService,
-				appointmentTime: appointmentDateTime.toISOString(), // Send directly in local time
+				appointmentTime: appointmentDateTime.toISOString(),
 				notes: [],
 			};
 

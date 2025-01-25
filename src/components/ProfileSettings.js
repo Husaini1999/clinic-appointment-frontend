@@ -30,6 +30,7 @@ function ProfileSettings() {
 		name: '',
 		email: '',
 		phone: '',
+		address: '',
 		weight: '',
 		height: '',
 	});
@@ -77,6 +78,7 @@ function ProfileSettings() {
 					name: data.name || '',
 					email: data.email || '',
 					phone: data.phone || '',
+					address: data.address || '',
 					weight: data.weight || '',
 					height: data.height || '',
 				});
@@ -90,6 +92,10 @@ function ProfileSettings() {
 		fetchUserData();
 	}, [fetchUserData]);
 
+	const isValidPhone = (phone) => {
+		return isValidPhoneNumber(phone);
+	};
+
 	const handleProfileUpdate = async (e) => {
 		e.preventDefault();
 
@@ -98,7 +104,7 @@ function ProfileSettings() {
 
 		// Validate phone
 		if (!cleanPhone || !isValidPhoneNumber(cleanPhone)) {
-			setPhoneError('Please enter a valid phone number');
+			setPhoneError('Please enter a valid phone number. Example: +60123456789');
 			showMessage('Please enter a valid phone number', 'error');
 			return;
 		}
@@ -154,6 +160,18 @@ function ProfileSettings() {
 			showMessage('Error updating profile', 'error');
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handlePhoneChange = (e) => {
+		const phoneValue = e.target.value;
+		setUserData((prev) => ({ ...prev, phone: phoneValue }));
+
+		// Validate phone live
+		if (!isValidPhone(phoneValue)) {
+			setPhoneError('Please enter a valid phone number. Example: +60123456789');
+		} else {
+			setPhoneError('');
 		}
 	};
 
@@ -291,14 +309,23 @@ function ProfileSettings() {
 								fullWidth
 								label="Phone"
 								value={userData.phone}
-								onChange={(e) =>
-									setUserData({ ...userData, phone: e.target.value })
-								}
+								onChange={handlePhoneChange}
 								error={!!phoneError}
 								helperText={phoneError}
 								disabled={loading}
 								required
 								placeholder="+60123456789"
+							/>
+						</Grid>
+						<Grid item xs={12}>
+							<TextField
+								fullWidth
+								label="Address"
+								value={userData.address || ''}
+								onChange={(e) =>
+									setUserData({ ...userData, address: e.target.value })
+								}
+								disabled={loading}
 							/>
 						</Grid>
 						<Grid item xs={12} sm={6}>
