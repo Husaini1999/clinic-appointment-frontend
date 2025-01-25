@@ -592,11 +592,8 @@ function Homepage() {
 										lineHeight: 1.8,
 									}}
 								>
-									123 Cherang Street
-									<br />
-									Kuala Lumpur, 50450
-									<br />
-									Malaysia
+									Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000
+									Ampang, Wilayah Persekutuan Kuala Lumpur.
 								</Typography>
 							</Paper>
 						</Grid>
@@ -635,9 +632,7 @@ function Homepage() {
 										lineHeight: 1.8,
 									}}
 								>
-									+60 3-1234 5678
-									<br />
-									Emergency: +60 3-1234 5679
+									+60 18-786 9727
 								</Typography>
 							</Paper>
 						</Grid>
