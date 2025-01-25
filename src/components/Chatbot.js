@@ -229,6 +229,16 @@ const Chatbot = () => {
 	});
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [confidence, setConfidence] = useState(1);
+	// Add this state for input validation
+	const [isInputValid, setIsInputValid] = useState(true);
+	const [inputHelperText, setInputHelperText] = useState('');
+	// Add these validation functions at the top level
+	const isValidName = (name) => name?.trim().length >= 2;
+	const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	const isValidPhoneInput = (phone) => {
+		const { isValid } = validateAndFormatPhone(phone);
+		return isValid;
+	};
 
 	const theme = createTheme({
 		palette: {
@@ -274,6 +284,10 @@ const Chatbot = () => {
 
 				setResponses((prev) => [
 					...prev,
+					{
+						text: 'Tip: If you have an account, logging in first will make booking faster as your details will be pre-filled.',
+						sender: 'ai',
+					},
 					{
 						text: "Let's help you book an appointment. First, please select a service category:",
 						sender: 'ai',
@@ -430,39 +444,6 @@ const Chatbot = () => {
 			return [];
 		}
 	};
-
-	// const GuidedResponse = ({ response, onAction }) => {
-	// 	if (response.type === 'options') {
-	// 		return (
-	// 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-	// 				{response.text && (
-	// 					<Typography sx={{ whiteSpace: 'pre-line' }}>
-	// 						{response.text}
-	// 					</Typography>
-	// 				)}
-	// 				{response.data.map((option, index) => (
-	// 					<Button
-	// 						key={index}
-	// 						variant="outlined"
-	// 						onClick={() => {
-	// 							// Just call onAction with the value, don't simulate user input
-	// 							onAction(option.value);
-	// 						}}
-	// 						sx={{
-	// 							borderRadius: '20px',
-	// 							textTransform: 'none',
-	// 							justifyContent: 'flex-start',
-	// 							px: 2,
-	// 						}}
-	// 					>
-	// 						{option.label}
-	// 					</Button>
-	// 				))}
-	// 			</Box>
-	// 		);
-	// 	}
-	// 	return null;
-	// };
 
 	const GuidedResponse = ({ response, onAction }) => {
 		switch (response.type) {
@@ -1143,6 +1124,7 @@ const Chatbot = () => {
 										name: userData.name,
 										email: userData.email,
 										phone: userData.phone,
+										address: userData.address,
 										weight: userData.weight,
 										height: userData.height,
 									},
@@ -1162,6 +1144,7 @@ const Chatbot = () => {
 											`Name:  ${userData.name}`,
 											`Email:  ${userData.email}`,
 											`Phone:  ${userData.phone}`,
+											`Address: ${userData.address}`,
 										].join('\n'),
 										sender: 'ai',
 										type: 'userConfirmation',
@@ -1245,6 +1228,8 @@ const Chatbot = () => {
 								{
 									text: 'Please enter a valid name (at least 2 characters):',
 									sender: 'ai',
+									type: 'textInput',
+									field: 'name',
 								},
 							]);
 							return;
@@ -1317,7 +1302,7 @@ const Chatbot = () => {
 								{
 									text:
 										'Please enter a valid Malaysian phone number:\n' +
-										'Examples: 0123456789, +60123456789',
+										'Examples: +60123456789',
 									sender: 'ai',
 									type: 'textInput',
 									field: 'phone',
@@ -1335,10 +1320,98 @@ const Chatbot = () => {
 							},
 						}));
 
-						// Continue with the flow...
+						// // Check if user is logged in and has address
+						// const token = localStorage.getItem('token');
+						// if (token) {
+						// 	try {
+						// 		const response = await fetch(
+						// 			`${config.apiUrl}/api/auth/user-details`,
+						// 			{
+						// 				headers: {
+						// 					Authorization: `Bearer ${token}`,
+						// 				},
+						// 			}
+						// 		);
+						// 		const userData = await response.json();
+
+						// 		if (userData.address) {
+						// 			// Use existing address and move to doctor preference
+						// 			setFlowData((prev) => ({
+						// 				...prev,
+						// 				userData: {
+						// 					...prev.userData,
+						// 					address: userData.address,
+						// 				},
+						// 			}));
+						// 			setResponses((prev) => [
+						// 				...prev,
+						// 				{ text: formatted, sender: 'user' },
+						// 				{
+						// 					text: `Using your current address: ${userData.address}`,
+						// 					sender: 'ai',
+						// 				},
+						// 				{
+						// 					text: 'Please select your preferred doctor gender:',
+						// 					sender: 'ai',
+						// 					type: 'doctorPreferenceSelection',
+						// 					data: [
+						// 						{ value: 'any', label: 'No Preference' },
+						// 						{ value: 'male', label: 'Male Doctor' },
+						// 						{ value: 'female', label: 'Female Doctor' },
+						// 					],
+						// 				},
+						// 			]);
+						// 			setCurrentInputType(null);
+						// 			setIsProcessing(false);
+						// 			break;
+						// 		}
+						// 	} catch (error) {
+						// 		console.error('Error fetching user details:', error);
+						// 	}
+						// }
+
+						// If not logged in or no address found, ask for address
 						setResponses((prev) => [
 							...prev,
 							{ text: formatted, sender: 'user' },
+							{
+								text: 'Please enter your complete address:',
+								sender: 'ai',
+								type: 'textInput',
+								field: 'address',
+							},
+						]);
+						setCurrentInputType('address');
+						setIsProcessing(false);
+						break;
+					case 'address':
+						if (!value?.trim()) {
+							setResponses((prev) => [
+								...prev,
+								{ text: '', sender: 'user' },
+								{
+									text: 'Please enter a valid address:',
+									sender: 'ai',
+									type: 'textInput',
+									field: 'address',
+								},
+							]);
+							setIsProcessing(false);
+							return;
+						}
+
+						// Update flowData with address
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								address: value.trim(),
+							},
+						}));
+
+						setResponses((prev) => [
+							...prev,
+							{ text: value, sender: 'user' },
 							{
 								text: 'Please select your preferred doctor gender:',
 								sender: 'ai',
@@ -1351,6 +1424,7 @@ const Chatbot = () => {
 							},
 						]);
 						setCurrentInputType(null);
+						setIsProcessing(false);
 						break;
 				}
 				break;
@@ -1885,6 +1959,10 @@ const Chatbot = () => {
 			case 'management':
 				const intent = parseManagementIntent(userInputText);
 				if (intent) {
+					setResponses((prev) => [
+						...prev,
+						{ text: userInputText, sender: 'user' },
+					]);
 					handleGuidedAction('appointmentAction', intent);
 				} else {
 					setResponses((prev) => [
@@ -1897,9 +1975,20 @@ const Chatbot = () => {
 							field: 'management',
 						},
 					]);
+					if (
+						userInputText.toLowerCase().includes('cancel') ||
+						userInputText.toLowerCase().includes('reschedule')
+					) {
+						setCurrentInputType('management'); // Keep the input type as management
+					} else {
+						setGuidedFlow(null);
+						setFlowData({});
+						setCurrentStep(0);
+						setCurrentInputType(null);
+					}
+					setIsProcessing(false); // Reset processing state
+					break; // Use break instead of return to continue the flow
 				}
-				return;
-
 			case 'changeAppointmentPage':
 				if (data.direction === 'prev' || data.direction === 'next') {
 					setResponses((prev) =>
@@ -1990,9 +2079,9 @@ const Chatbot = () => {
 				name: userData.name,
 				email: userData.email,
 				phone: userData.phone,
-				address: userData.address || 'Not provided', // Add address field
+				address: userData.address,
 				treatment: flowData.selectedService,
-				appointmentTime: appointmentDateTime.toISOString(),
+				appointmentTime: appointmentDateTime.toISOString(), // Send directly in local time
 				notes: [],
 			};
 
@@ -2042,8 +2131,9 @@ const Chatbot = () => {
 						`Time: ${format(appointmentDateTime, 'h:mm a')}\n` +
 						`Name: ${appointmentData.name}\n` +
 						`Email: ${appointmentData.email}\n` +
-						`Phone: ${appointmentData.phone}\n\n` +
-						`You will receive a confirmation email shortly.`,
+						`Phone: ${appointmentData.phone}\n` +
+						`Address: ${appointmentData.address}\n\n` +
+						`We hope to see you soon!`,
 					sender: 'ai',
 				},
 			]);
@@ -2082,427 +2172,494 @@ const Chatbot = () => {
 		setCurrentStep(0);
 		setUserInput('');
 		setCurrentInputType(null);
+		setIsProcessing(false);
 	};
 
-	const handleManageAppointments = () => {
-		// Reset only flow-related states
-		setGuidedFlow(null);
-		setFlowData({});
-		setCurrentStep(0);
-		setCurrentInputType(null);
+	// const handleManageAppointments = () => {
+	// 	// Reset only flow-related states
+	// 	setGuidedFlow(null);
+	// 	setFlowData({});
+	// 	setCurrentStep(0);
+	// 	setCurrentInputType(null);
 
-		// Add new responses without clearing history
-		setResponses((prev) => [
-			...prev,
-			{
-				text: 'Would you like to reschedule or cancel an appointment?',
-				sender: 'ai',
-				type: 'managementOptions',
-				data: [
-					{ value: 'Reschedule', label: 'Reschedule Appointment' },
-					{ value: 'Cancel', label: 'Cancel Appointment' },
-				],
-			},
-		]);
-	};
+	// 	// Add new responses without clearing history
+	// 	setResponses((prev) => [
+	// 		...prev,
+	// 		{
+	// 			text: 'Would you like to reschedule or cancel an appointment?',
+	// 			sender: 'ai',
+	// 			type: 'managementOptions',
+	// 			data: [
+	// 				{ value: 'Reschedule', label: 'Reschedule Appointment' },
+	// 				{ value: 'Cancel', label: 'Cancel Appointment' },
+	// 			],
+	// 		},
+	// 	]);
+	// };
 
 	const handleUserInput = async (userInputText) => {
-		setIsProcessing(true);
-		if (currentInputType) {
-			// Handle guided input types
-			switch (currentInputType) {
-				case 'name':
-					if (!userInputText || userInputText.length < 2) {
-						setResponses((prev) => [
-							...prev,
-							{ text: userInputText || '', sender: 'user' },
-							{
-								text: 'Please enter a valid name (at least 2 characters):',
-								sender: 'ai',
-							},
-						]);
-						return;
-					}
-					// Update flowData with name
-					setFlowData((prev) => ({
-						...prev,
-						userData: {
-							...prev.userData,
-							name: userInputText,
-						},
-					}));
-					// Show next prompt
-					setResponses((prev) => [
-						...prev,
-						{ text: userInputText, sender: 'user' },
-						{
-							text: 'Please enter your email address:',
-							sender: 'ai',
-							type: 'textInput',
-							field: 'email',
-						},
-					]);
-					setCurrentInputType('email');
-					break;
+		setIsProcessing(true); // Set at start of processing
 
-				case 'email':
-					if (
-						!userInputText ||
-						!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInputText)
-					) {
+		try {
+			if (currentInputType) {
+				// Handle guided input types
+				switch (currentInputType) {
+					case 'name':
+						if (!isValidName(userInputText)) {
+							setResponses((prev) => [
+								...prev,
+								{ text: userInputText || '', sender: 'user' },
+								{
+									text: 'Please enter a valid name (at least 2 characters):',
+									sender: 'ai',
+									type: 'textInput',
+									field: 'name',
+								},
+							]);
+							setIsProcessing(false); // Reset here if validation fails
+							return;
+						}
+
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								name: userInputText,
+							},
+						}));
+
 						setResponses((prev) => [
 							...prev,
-							{ text: userInputText || '', sender: 'user' },
+							{ text: userInputText, sender: 'user' },
 							{
-								text: "That doesn't look like a valid email address. Please try again:",
+								text: 'Please enter your email address:',
 								sender: 'ai',
 								type: 'textInput',
 								field: 'email',
 							},
 						]);
-						return;
-					}
-					// Update flowData with email
-					setFlowData((prev) => ({
-						...prev,
-						userData: {
-							...prev.userData,
-							email: userInputText,
-						},
-					}));
-					// Show next prompt
-					setResponses((prev) => [
-						...prev,
-						{ text: userInputText, sender: 'user' },
-						{
-							text: 'Please enter your phone number (+601X-XXXXXXX):',
-							sender: 'ai',
-							type: 'textInput',
-							field: 'phone',
-						},
-					]);
-					setCurrentInputType('phone');
-					break;
+						setCurrentInputType('email');
+						setIsProcessing(false); // Reset after processing
+						break;
 
-				case 'phone':
-					const { isValid, formatted } = validateAndFormatPhone(userInputText);
-					if (!isValid) {
+					case 'email':
+						if (
+							!userInputText ||
+							!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInputText)
+						) {
+							setResponses((prev) => [
+								...prev,
+								{ text: userInputText || '', sender: 'user' },
+								{
+									text: "That doesn't look like a valid email address. Please try again:",
+									sender: 'ai',
+									type: 'textInput',
+									field: 'email',
+								},
+							]);
+							return;
+						}
+						// Update flowData with email
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								email: userInputText,
+							},
+						}));
+						// Show next prompt
 						setResponses((prev) => [
 							...prev,
+							{ text: userInputText, sender: 'user' },
 							{
-								text: userInputText || '',
-								sender: 'user',
-							},
-							{
-								text:
-									'Please enter a valid Malaysian phone number:\n' +
-									'Examples: 0123456789, +60123456789',
+								text: 'Please enter your phone number (+601X-XXXXXXX):',
 								sender: 'ai',
 								type: 'textInput',
 								field: 'phone',
 							},
 						]);
-						return;
-					}
+						setCurrentInputType('phone');
+						setIsProcessing(false); // Reset after processing
+						break;
 
-					// Update flowData with formatted phone
-					setFlowData((prev) => ({
-						...prev,
-						userData: {
-							...prev.userData,
-							phone: formatted,
-						},
-					}));
-
-					// Continue with the flow...
-					setResponses((prev) => [
-						...prev,
-						{ text: formatted, sender: 'user' },
-						{
-							text: 'Please select your preferred doctor gender:',
-							sender: 'ai',
-							type: 'doctorPreferenceSelection',
-							data: [
-								{ value: 'any', label: 'No Preference' },
-								{ value: 'male', label: 'Male Doctor' },
-								{ value: 'female', label: 'Female Doctor' },
-							],
-						},
-					]);
-					setCurrentInputType(null);
-					break;
-
-				case 'notes':
-					// Handle notes (allow empty for skipping)
-					setFlowData((prev) => ({
-						...prev,
-						userData: {
-							...prev.userData,
-							notes: userInputText || '',
-						},
-					}));
-
-					// Show the notes or skipped message in chat
-					setResponses((prev) => [
-						...prev,
-						{
-							text: userInputText || 'Skipped additional information',
-							sender: 'user',
-						},
-					]);
-
-					// Proceed with booking
-					handleFinalBooking({
-						...flowData.userData,
-						notes: userInputText || '',
-					});
-					setCurrentInputType(null);
-					break;
-
-				case 'management':
-					const intent = parseManagementIntent(userInputText);
-					if (intent) {
-						setResponses((prev) => [
-							...prev,
-							{ text: userInputText, sender: 'user' },
-						]);
-						handleGuidedAction('appointmentAction', intent);
-					} else {
-						setResponses((prev) => [
-							...prev,
-							{ text: userInputText, sender: 'user' },
-							{
-								text: 'Would you like to reschedule or cancel an appointment? Please specify.',
-								sender: 'ai',
-								type: 'textInput',
-								field: 'management',
-							},
-						]);
-					}
-					return;
-
-				case 'rescheduleNotes':
-					if (!userInputText?.trim()) {
-						setResponses((prev) => [
-							...prev,
-							{ text: '', sender: 'user' },
-							{
-								text: 'Please provide a reason for rescheduling (Required):',
-								sender: 'ai',
-							},
-						]);
-						return;
-					}
-
-					const handleReschedule = async () => {
-						// Add async function
-						try {
-							const notes = userInputText?.trim();
-							const response = await fetch(
-								`${config.apiUrl}/api/appointments/${flowData.selectedAppointment._id}/reschedule`,
-								{
-									method: 'PUT',
-									headers: {
-										'Content-Type': 'application/json',
-										Authorization: `Bearer ${localStorage.getItem('token')}`,
-									},
-									body: JSON.stringify({
-										newDateTime: flowData.newDateTime,
-										reason: notes,
-									}),
-								}
-							);
-
-							if (!response.ok) {
-								throw new Error('Failed to reschedule appointment');
-							}
-
-							const { title } = getAppointmentDescription(
-								flowData.selectedAppointment
-							);
-							const newDateTime = new Date(flowData.newDateTime);
-
+					case 'phone':
+						const { isValid, formatted } =
+							validateAndFormatPhone(userInputText);
+						if (!isValid) {
 							setResponses((prev) => [
 								...prev,
-								{ text: notes, sender: 'user' },
 								{
-									text: `Your appointment for ${title} has been rescheduled to ${format(
-										newDateTime,
-										'MMMM d, yyyy'
-									)} at ${format(newDateTime, 'h:mm a')}.`,
+									text: userInputText || '',
+									sender: 'user',
+								},
+								{
+									text:
+										'Please enter a valid Malaysian phone number:\n' +
+										'Examples: 0123456789, +60123456789',
+									sender: 'ai',
+									type: 'textInput',
+									field: 'phone',
+								},
+							]);
+							setIsProcessing(false);
+							return;
+						}
+
+						// Update flowData with formatted phone
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								phone: formatted,
+							},
+						}));
+
+						// If not logged in or no address found, ask for address
+						setResponses((prev) => [
+							...prev,
+							{ text: formatted, sender: 'user' },
+							{
+								text: 'Please enter your complete address:',
+								sender: 'ai',
+								type: 'textInput',
+								field: 'address',
+							},
+						]);
+						setCurrentInputType('address');
+						setIsProcessing(false);
+						break;
+					case 'address':
+						if (!userInputText?.trim()) {
+							setResponses((prev) => [
+								...prev,
+								{ text: '', sender: 'user' },
+								{
+									text: 'Please enter a valid address:',
+									sender: 'ai',
+									type: 'textInput',
+									field: 'address',
+								},
+							]);
+							setIsProcessing(false);
+							return;
+						}
+
+						// Update flowData with address
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								address: userInputText.trim(),
+							},
+						}));
+
+						setResponses((prev) => [
+							...prev,
+							{ text: userInputText, sender: 'user' },
+							{
+								text: 'Please select your preferred doctor gender:',
+								sender: 'ai',
+								type: 'doctorPreferenceSelection',
+								data: [
+									{ value: 'any', label: 'No Preference' },
+									{ value: 'male', label: 'Male Doctor' },
+									{ value: 'female', label: 'Female Doctor' },
+								],
+							},
+						]);
+						setCurrentInputType(null);
+						setIsProcessing(false);
+						break;
+					case 'notes':
+						// Handle notes (allow empty for skipping)
+						setFlowData((prev) => ({
+							...prev,
+							userData: {
+								...prev.userData,
+								notes: userInputText || '',
+							},
+						}));
+
+						// Show the notes or skipped message in chat
+						setResponses((prev) => [
+							...prev,
+							{
+								text: userInputText || 'Skipped additional information',
+								sender: 'user',
+							},
+						]);
+
+						// Proceed with booking
+						handleFinalBooking({
+							...flowData.userData,
+							notes: userInputText || '',
+						});
+						setCurrentInputType(null);
+						setIsProcessing(false); // Reset after processing
+						break;
+
+					case 'management':
+						const intent = parseManagementIntent(userInputText);
+						if (intent) {
+							setResponses((prev) => [
+								...prev,
+								{ text: userInputText, sender: 'user' },
+							]);
+							handleGuidedAction('appointmentAction', intent);
+						} else {
+							setResponses((prev) => [
+								...prev,
+								{ text: userInputText, sender: 'user' },
+								{
+									text: 'Would you like to reschedule or cancel an appointment? Please specify.',
+									sender: 'ai',
+									type: 'textInput',
+									field: 'management',
+								},
+							]);
+							if (
+								userInputText.toLowerCase().includes('cancel') ||
+								userInputText.toLowerCase().includes('reschedule')
+							) {
+								setCurrentInputType('management'); // Keep the input type as management
+							} else {
+								setGuidedFlow(null);
+								setFlowData({});
+								setCurrentStep(0);
+								setCurrentInputType(null);
+							}
+						}
+						setIsProcessing(false); // Reset processing state
+						break; // Use break instead of return to continue the flow
+
+					case 'rescheduleNotes':
+						if (!userInputText?.trim()) {
+							setResponses((prev) => [
+								...prev,
+								{ text: '', sender: 'user' },
+								{
+									text: 'Please provide a reason for rescheduling (Required):',
 									sender: 'ai',
 								},
 							]);
+							return;
+						}
 
-							// Reset states
-							setGuidedFlow(null);
-							setFlowData({});
-							setCurrentInputType(null);
-						} catch (error) {
-							console.error('Error rescheduling appointment:', error);
+						const handleReschedule = async () => {
+							// Add async function
+							try {
+								const notes = userInputText?.trim();
+								const response = await fetch(
+									`${config.apiUrl}/api/appointments/${flowData.selectedAppointment._id}/reschedule`,
+									{
+										method: 'PUT',
+										headers: {
+											'Content-Type': 'application/json',
+											Authorization: `Bearer ${localStorage.getItem('token')}`,
+										},
+										body: JSON.stringify({
+											newDateTime: flowData.newDateTime,
+											reason: notes,
+										}),
+									}
+								);
+
+								if (!response.ok) {
+									throw new Error('Failed to reschedule appointment');
+								}
+
+								const { title } = getAppointmentDescription(
+									flowData.selectedAppointment
+								);
+								const newDateTime = new Date(flowData.newDateTime);
+
+								setResponses((prev) => [
+									...prev,
+									{ text: notes, sender: 'user' },
+									{
+										text: `Your appointment for ${title} has been rescheduled to ${format(
+											newDateTime,
+											'MMMM d, yyyy'
+										)} at ${format(newDateTime, 'h:mm a')}.`,
+										sender: 'ai',
+									},
+								]);
+
+								// Reset states
+								setGuidedFlow(null);
+								setFlowData({});
+								setCurrentInputType(null);
+							} catch (error) {
+								console.error('Error rescheduling appointment:', error);
+								setResponses((prev) => [
+									...prev,
+									{
+										text: 'Sorry, there was an error rescheduling your appointment. Please try again later.',
+										sender: 'ai',
+									},
+								]);
+							}
+						};
+
+						handleReschedule(); // Call the async function
+						break;
+
+					case 'cancellationReason':
+						if (!userInputText?.trim()) {
 							setResponses((prev) => [
 								...prev,
 								{
-									text: 'Sorry, there was an error rescheduling your appointment. Please try again later.',
+									text: 'Please provide a reason for cancellation:',
+									sender: 'ai',
+									type: 'textInput',
+									field: 'cancellationReason',
+								},
+							]);
+							return;
+						}
+
+						// Pass the cancellation reason to handleGuidedAction
+						handleGuidedAction('cancellationReason', null, userInputText);
+						break;
+
+					default:
+						console.warn('Unhandled input type:', currentInputType);
+						break;
+				}
+			} else {
+				setIsProcessing(true); // Show processing state
+				setResponses((prev) => [
+					...prev,
+					{ text: userInputText, sender: 'user' },
+				]);
+				console.log('USER INPUT', userInputText);
+				// Update conversation context
+				setConversationContext((prev) => ({
+					...prev,
+					interactionCount: prev.interactionCount + 1,
+					timeOfDay: new Date().getHours(),
+				}));
+
+				// First check for management intents
+				const managementIntent = parseManagementIntent(userInputText);
+				if (managementIntent) {
+					handleGuidedAction('appointmentAction', managementIntent);
+					setIsProcessing(false);
+					return;
+				}
+
+				// Detect intent with NLP
+				const detectedIntent = await detectIntent(userInputText);
+
+				// Get response based on confidence
+				const getContextAwareResponse = (intent) => {
+					const responses = responseVariations[intent] || [];
+					const baseResponse =
+						responses[Math.floor(Math.random() * responses.length)];
+
+					// Add context-aware additions based on confidence
+					if (confidence < 0.5) {
+						return `I didn't quite catch that. Could you please rephrase your question so I can better assist you?`;
+					}
+					return baseResponse;
+				};
+
+				console.log('Detected Intent:', detectedIntent);
+				console.log('Confidence Score:', confidence);
+				switch (detectedIntent) {
+					case 'booking':
+						// const bookingResponse = getContextAwareResponse('booking');
+						// setResponses((prev) => [
+						// 	...prev,
+						// 	{ text: bookingResponse, sender: 'ai' },
+						// ]);
+						handleCategoryClick('BookAppointment');
+						break;
+
+					case 'managing':
+						const managingResponse = getContextAwareResponse('managing');
+						setResponses((prev) => [
+							...prev,
+							{ text: managingResponse, sender: 'ai' },
+						]);
+						setCurrentInputType('management');
+						break;
+
+					case 'location':
+						const locationResponse = getContextAwareResponse('location');
+						setResponses((prev) => [
+							...prev,
+							{ text: locationResponse, sender: 'ai' },
+						]);
+						break;
+
+					case 'greeting':
+						const greetingResponse = getContextAwareResponse('greeting');
+						setResponses((prev) => [
+							...prev,
+							{
+								text: greetingResponse,
+								sender: 'ai',
+							},
+						]);
+						break;
+
+					case 'help':
+						const helpResponse = getContextAwareResponse('help');
+						setResponses((prev) => [
+							...prev,
+							{
+								text: helpResponse,
+								sender: 'ai',
+								type: 'options',
+								data: [
+									{ label: 'Book Appointment', value: 'booking' },
+									{ label: 'Manage Appointments', value: 'managing' },
+									{ label: 'Find Clinic Location', value: 'location' },
+									{ label: 'Contact Us', value: 'contact' },
+									{ label: 'Help/FAQ', value: 'help' },
+								],
+							},
+						]);
+						break; // Just use break instead of return
+
+					case 'services':
+						const services = await fetchServices();
+						const servicesList = services
+							.map((service) => `- ${service.name}`)
+							.sort((a, b) => a.localeCompare(b)) // Sort in ascending alphabetical order
+							.join('\n');
+						setResponses((prev) => [
+							...prev,
+							{
+								text: `Here are the services we offer:\n${servicesList}\nand more. \n\nFor more info, you may view our services on our website.`,
+								sender: 'ai',
+							},
+						]);
+						break;
+
+					// Add a default case to handle low-confidence scenarios
+					default:
+						if (confidence < 0.5) {
+							setResponses((prev) => [
+								...prev,
+								{
+									text: "I'm not sure I understood that. Could you please rephrase?",
 									sender: 'ai',
 								},
 							]);
 						}
-					};
-
-					handleReschedule(); // Call the async function
-					break;
-
-				case 'cancellationReason':
-					if (!userInputText?.trim()) {
-						setResponses((prev) => [
-							...prev,
-							{
-								text: 'Please provide a reason for cancellation:',
-								sender: 'ai',
-								type: 'textInput',
-								field: 'cancellationReason',
-							},
-						]);
-						return;
-					}
-
-					// Pass the cancellation reason to handleGuidedAction
-					handleGuidedAction('cancellationReason', null, userInputText);
-					break;
-
-				default:
-					console.warn('Unhandled input type:', currentInputType);
-					break;
-			}
-		} else {
-			setIsProcessing(true); // Show processing state
-			setResponses((prev) => [
-				...prev,
-				{ text: userInputText, sender: 'user' },
-			]);
-			console.log('USER INPUT', userInputText);
-			// Update conversation context
-			setConversationContext((prev) => ({
-				...prev,
-				interactionCount: prev.interactionCount + 1,
-				timeOfDay: new Date().getHours(),
-			}));
-
-			// First check for management intents
-			const managementIntent = parseManagementIntent(userInputText);
-			if (managementIntent) {
-				handleGuidedAction('appointmentAction', managementIntent);
-				setIsProcessing(false);
-				return;
-			}
-
-			// Detect intent with NLP
-			const detectedIntent = await detectIntent(userInputText);
-
-			// Get response based on confidence
-			const getContextAwareResponse = (intent) => {
-				const responses = responseVariations[intent] || [];
-				const baseResponse =
-					responses[Math.floor(Math.random() * responses.length)];
-
-				// Add context-aware additions based on confidence
-				if (confidence < 0.5) {
-					return `I didn't quite catch that. Could you please rephrase your question so I can better assist you?`;
+						break;
 				}
-				return baseResponse;
-			};
-
-			console.log('Detected Intent:', detectedIntent);
-			console.log('Confidence Score:', confidence);
-			switch (detectedIntent) {
-				case 'booking':
-					const bookingResponse = getContextAwareResponse('booking');
-					setResponses((prev) => [
-						...prev,
-						{ text: bookingResponse, sender: 'ai' },
-					]);
-					handleCategoryClick('BookAppointment');
-					break;
-
-				case 'managing':
-					const managingResponse = getContextAwareResponse('managing');
-					setResponses((prev) => [
-						...prev,
-						{ text: managingResponse, sender: 'ai' },
-					]);
-					setCurrentInputType('management');
-					break;
-
-				case 'location':
-					const locationResponse = getContextAwareResponse('location');
-					setResponses((prev) => [
-						...prev,
-						{ text: locationResponse, sender: 'ai' },
-					]);
-					break;
-
-				case 'greeting':
-					const greetingResponse = getContextAwareResponse('greeting');
-					setResponses((prev) => [
-						...prev,
-						{
-							text: greetingResponse,
-							sender: 'ai',
-						},
-					]);
-					break;
-
-				case 'help':
-					const helpResponse = getContextAwareResponse('help');
-					setResponses((prev) => [
-						...prev,
-						{
-							text: helpResponse,
-							sender: 'ai',
-							type: 'options',
-							data: [
-								{ label: 'Book Appointment', value: 'booking' },
-								{ label: 'Manage Appointments', value: 'managing' },
-								{ label: 'Find Clinic Location', value: 'location' },
-								{ label: 'Contact Us', value: 'contact' },
-								{ label: 'Help/FAQ', value: 'help' },
-							],
-						},
-					]);
-					break; // Just use break instead of return
-
-				case 'services':
-					const services = await fetchServices();
-					const servicesList = services
-						.map((service) => `- ${service.name}`)
-						.sort((a, b) => a.localeCompare(b)) // Sort in ascending alphabetical order
-						.join('\n');
-					setResponses((prev) => [
-						...prev,
-						{
-							text: `Here are the services we offer:\n${servicesList}\nand more. \n\nFor more info, you may view our services on our website.`,
-							sender: 'ai',
-						},
-					]);
-					break;
-
-				// Add a default case to handle low-confidence scenarios
-				default:
-					if (confidence < 0.5) {
-						setResponses((prev) => [
-							...prev,
-							{
-								text: "I'm not sure I understood that. Could you please rephrase?",
-								sender: 'ai',
-							},
-						]);
-					}
-					break;
+				setUserInput('');
+				setIsProcessing(false);
 			}
-			setUserInput('');
-			setIsProcessing(false);
+		} catch (error) {
+			console.error('Error in handleUserInput:', error);
+			setIsProcessing(false); // Reset on error
 		}
+
+		setIsProcessing(false); // Ensure it's always reset at the end
 	};
 
 	// Modify detectIntent to use fuzzy matching
@@ -2594,6 +2751,39 @@ const Chatbot = () => {
 		} catch (error) {
 			console.error('Error fetching services:', error);
 			return [];
+		}
+	};
+
+	// Modify the input change handler
+	const handleInputChange = (e) => {
+		const value = e.target.value;
+		setUserInput(value);
+
+		// Validate based on current input type
+		switch (currentInputType) {
+			case 'name':
+				setIsInputValid(isValidName(value));
+				setInputHelperText(
+					isValidName(value) ? '' : 'Name must be at least 2 characters'
+				);
+				break;
+			case 'email':
+				setIsInputValid(isValidEmail(value));
+				setInputHelperText(
+					isValidEmail(value) ? '' : 'Please enter a valid email address'
+				);
+				break;
+			case 'phone':
+				setIsInputValid(isValidPhoneInput(value));
+				setInputHelperText(
+					isValidPhoneInput(value)
+						? ''
+						: 'Enter a valid Malaysian phone number (e.g., +60123456789)'
+				);
+				break;
+			default:
+				setIsInputValid(true);
+				setInputHelperText('');
 		}
 	};
 
@@ -2785,7 +2975,7 @@ const Chatbot = () => {
 							gap: 1,
 						}}
 					>
-						<Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+						<Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
 							<TextField
 								fullWidth
 								placeholder={
@@ -2794,21 +2984,26 @@ const Chatbot = () => {
 										: currentInputType === 'email'
 										? 'Enter your email address...'
 										: currentInputType === 'phone'
-										? 'Enter your phone number (e.g., 0123456789 or +60123456789)...'
+										? 'Enter your phone number (e.g., +60123456789)...'
 										: currentInputType === 'notes'
 										? 'Type your message or click Skip to skip notes (Optional)...'
 										: 'Type a message...'
 								}
 								value={userInput}
-								onChange={(e) => setUserInput(e.target.value)}
+								onChange={handleInputChange}
 								onKeyDown={(e) => {
-									if (e.key === 'Enter') {
+									if (
+										e.key === 'Enter' &&
+										(isInputValid || currentInputType === 'notes')
+									) {
 										if (currentInputType === 'notes' || userInput.trim()) {
 											handleUserInput(userInput.trim());
 											setUserInput('');
 										}
 									}
 								}}
+								error={!isInputValid && userInput !== ''}
+								helperText={userInput !== '' ? inputHelperText : ''}
 								sx={{
 									'& .MuiOutlinedInput-root': {
 										borderRadius: '20px',
@@ -2819,15 +3014,25 @@ const Chatbot = () => {
 							<Button
 								variant="contained"
 								onClick={() => {
-									handleUserInput(userInput);
-									setUserInput('');
+									if (currentInputType === 'notes' || userInput.trim()) {
+										handleUserInput(userInput.trim());
+										setUserInput('');
+									}
 								}}
 								disabled={
-									isProcessing || (!userInput.trim() && !currentInputType)
+									isProcessing ||
+									(!isInputValid &&
+										userInput !== '' &&
+										currentInputType !== 'notes') // Don't disable for empty notes
 								}
 								sx={{
 									borderRadius: '20px',
 									minWidth: '100px',
+									height: '56px',
+									bgcolor: 'primary.main',
+									'&:hover': {
+										bgcolor: 'primary.dark',
+									},
 								}}
 							>
 								{isProcessing ? (
