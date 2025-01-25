@@ -320,6 +320,13 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	});
 	const [completeModalOpen, setCompleteModalOpen] = useState(false);
 	const [completeNotes, setCompleteNotes] = useState('');
+	const [dayFilter, setDayFilter] = useState('all');
+	const dayOptions = ['all', 'today', 'tomorrow'];
+	const dayDisplayNames = {
+		all: 'All',
+		today: 'Today',
+		tomorrow: 'Tomorrow',
+	};
 
 	// Get unique treatments from appointments
 	const treatments = [
@@ -340,7 +347,24 @@ function AppointmentManagement({ appointments, onRefresh }) {
 			treatmentFilter === 'all' || apt.treatment?.name === treatmentFilter;
 		const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
 
-		return matchesSearch && matchesTreatment && matchesStatus;
+		// Add day filtering
+		const appointmentDate = new Date(apt.appointmentTime);
+		appointmentDate.setHours(0, 0, 0, 0);
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+
+		const matchesDay =
+			dayFilter === 'all' ||
+			(dayFilter === 'today' &&
+				appointmentDate.getTime() === today.getTime()) ||
+			(dayFilter === 'tomorrow' &&
+				appointmentDate.getTime() === tomorrow.getTime());
+
+		return matchesSearch && matchesTreatment && matchesStatus && matchesDay;
 	});
 
 	const handleStatusUpdate = async (appointmentId, newStatus) => {
@@ -530,6 +554,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 		setSearchTerm('');
 		setStatusFilter('all');
 		setTreatmentFilter('all');
+		setDayFilter('all');
 		setOrderBy('');
 		setOrder('asc');
 	};
@@ -561,7 +586,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	// Reset page when filters change
 	React.useEffect(() => {
 		setPage(0);
-	}, [searchTerm, statusFilter, treatmentFilter]);
+	}, [searchTerm, statusFilter, treatmentFilter, dayFilter]);
 
 	// Add handleCancel function
 	const handleCancel = (appointment) => {
@@ -609,60 +634,81 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	return (
 		<Box sx={{ width: '100%', overflow: 'hidden' }}>
 			{/* Search and Filter Section */}
-			<Grid container spacing={2} sx={{ mt: 1, mb: 3 }}>
-				<Grid item xs={12} md={4}>
-					<TextField
-						fullWidth
-						variant="outlined"
-						placeholder="Search by patient name or email..."
-						value={searchTerm}
-						onChange={(e) => setSearchTerm(e.target.value)}
-						InputProps={{
-							startAdornment: (
-								<InputAdornment position="start">
-									<SearchIcon />
-								</InputAdornment>
-							),
-						}}
-					/>
-				</Grid>
-				{/* Treatment Filter */}
-				<Grid item xs={12} md={4}>
-					<FormControl fullWidth>
-						<InputLabel>Treatment</InputLabel>
-						<Select
-							value={treatmentFilter}
-							label="Treatment"
-							onChange={(e) => setTreatmentFilter(e.target.value)}
-						>
-							{treatments.map((treatment) => (
-								<MenuItem key={treatment} value={treatment}>
-									{treatment === 'all' ? 'All Treatments' : treatment}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</Grid>
-				{/* Status Filter */}
-				<Grid item xs={12} md={4}>
-					<FormControl fullWidth>
-						<InputLabel>Status</InputLabel>
-						<Select
-							value={statusFilter}
-							label="Status"
-							onChange={(e) => setStatusFilter(e.target.value)}
-						>
-							{statuses.map((status) => (
-								<MenuItem key={status} value={status}>
-									{status === 'all'
-										? 'All Statuses'
-										: statusDisplayNames[status]}
-								</MenuItem>
-							))}
-						</Select>
-					</FormControl>
-				</Grid>
-			</Grid>
+			<Box
+				sx={{
+					display: 'flex',
+					gap: 2,
+					mt: 1,
+					mb: 3,
+					flexDirection: { xs: 'column', md: 'row' },
+					alignItems: 'center',
+				}}
+			>
+				{/* Search Bar - larger flex */}
+				<TextField
+					sx={{ flex: 2 }}
+					variant="outlined"
+					size="small"
+					placeholder="Search by patient name or email..."
+					value={searchTerm}
+					onChange={(e) => setSearchTerm(e.target.value)}
+					InputProps={{
+						startAdornment: (
+							<InputAdornment position="start">
+								<SearchIcon />
+							</InputAdornment>
+						),
+					}}
+				/>
+
+				{/* Day Filter - smaller flex */}
+				<FormControl size="small" sx={{ flex: 1, minWidth: 120 }}>
+					<InputLabel>Day</InputLabel>
+					<Select
+						value={dayFilter}
+						label="Day"
+						onChange={(e) => setDayFilter(e.target.value)}
+					>
+						{dayOptions.map((day) => (
+							<MenuItem key={day} value={day}>
+								{dayDisplayNames[day]}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+
+				{/* Treatment Filter - smaller flex */}
+				<FormControl size="small" sx={{ flex: 1, minWidth: 120 }}>
+					<InputLabel>Treatment</InputLabel>
+					<Select
+						value={treatmentFilter}
+						label="Treatment"
+						onChange={(e) => setTreatmentFilter(e.target.value)}
+					>
+						{treatments.map((treatment) => (
+							<MenuItem key={treatment} value={treatment}>
+								{treatment === 'all' ? 'All Treatments' : treatment}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+
+				{/* Status Filter - smaller flex */}
+				<FormControl size="small" sx={{ flex: 1, minWidth: 120 }}>
+					<InputLabel>Status</InputLabel>
+					<Select
+						value={statusFilter}
+						label="Status"
+						onChange={(e) => setStatusFilter(e.target.value)}
+					>
+						{statuses.map((status) => (
+							<MenuItem key={status} value={status}>
+								{status === 'all' ? 'All Statuses' : statusDisplayNames[status]}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
+			</Box>
 
 			{/* Active Filters and Clear Button */}
 			<Box
@@ -676,7 +722,23 @@ function AppointmentManagement({ appointments, onRefresh }) {
 				}}
 			>
 				{/* Active Filter Chips */}
-				<Box sx={{ display: 'flex', gap: 1 }}>
+				<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+					{searchTerm && (
+						<Chip
+							label={`Search: ${searchTerm}`}
+							onDelete={() => setSearchTerm('')}
+							color="primary"
+							size="small"
+						/>
+					)}
+					{statusFilter !== 'all' && (
+						<Chip
+							label={`Status: ${statusDisplayNames[statusFilter]}`}
+							onDelete={() => setStatusFilter('all')}
+							color="primary"
+							size="small"
+						/>
+					)}
 					{treatmentFilter !== 'all' && (
 						<Chip
 							label={`Treatment: ${treatmentFilter}`}
@@ -685,10 +747,10 @@ function AppointmentManagement({ appointments, onRefresh }) {
 							size="small"
 						/>
 					)}
-					{statusFilter !== 'all' && (
+					{dayFilter !== 'all' && (
 						<Chip
-							label={`Status: ${statusFilter}`}
-							onDelete={() => setStatusFilter('all')}
+							label={`Day: ${dayDisplayNames[dayFilter]}`}
+							onDelete={() => setDayFilter('all')}
 							color="primary"
 							size="small"
 						/>
@@ -803,285 +865,318 @@ function AppointmentManagement({ appointments, onRefresh }) {
 						</TableRow>
 					</TableHead>
 					<TableBody>
-						{sortedAndPaginatedAppointments.map((appointment) => (
-							<TableRow key={appointment._id}>
-								<TableCell
-									sx={{
-										wordBreak: 'break-word',
-										whiteSpace: 'normal',
-										width: { xs: '120px', sm: '200px' },
-										maxWidth: { xs: '120px', sm: '200px' },
-										minWidth: { xs: '120px', sm: '200px' },
-										overflow: 'hidden',
-										textAlign: 'center',
-										verticalAlign: 'middle',
-										display: 'table-cell',
-										p: 1,
-									}}
-								>
-									{appointment.patientName}
-								</TableCell>
+						{sortedAndPaginatedAppointments.length > 0 ? (
+							sortedAndPaginatedAppointments.map((appointment) => (
+								<TableRow key={appointment._id}>
+									<TableCell
+										sx={{
+											wordBreak: 'break-word',
+											whiteSpace: 'normal',
+											width: { xs: '120px', sm: '200px' },
+											maxWidth: { xs: '120px', sm: '200px' },
+											minWidth: { xs: '120px', sm: '200px' },
+											overflow: 'hidden',
+											textAlign: 'center',
+											verticalAlign: 'middle',
+											display: 'table-cell',
+											p: 1,
+										}}
+									>
+										{appointment.patientName}
+									</TableCell>
 
-								<TableCell
-									className="hide-on-mobile"
-									sx={{
-										wordBreak: 'break-word',
-										whiteSpace: 'normal',
-										width: { xs: '150px', sm: '250px' },
-										maxWidth: { xs: '150px', sm: '250px' },
-										minWidth: { xs: '150px', sm: '250px' },
-										overflow: 'hidden',
-										textAlign: 'center',
-										verticalAlign: 'middle',
-										p: 1,
-									}}
-								>
-									{appointment.email}
-								</TableCell>
+									<TableCell
+										className="hide-on-mobile"
+										sx={{
+											wordBreak: 'break-word',
+											whiteSpace: 'normal',
+											width: { xs: '150px', sm: '250px' },
+											maxWidth: { xs: '150px', sm: '250px' },
+											minWidth: { xs: '150px', sm: '250px' },
+											overflow: 'hidden',
+											textAlign: 'center',
+											verticalAlign: 'middle',
+											p: 1,
+										}}
+									>
+										{appointment.email}
+									</TableCell>
 
-								<TableCell
-									className="hide-on-mobile"
-									sx={{
-										whiteSpace: 'nowrap',
-										overflow: 'hidden',
-										textOverflow: 'ellipsis',
-										width: { xs: '80px', sm: '100px' },
-										maxWidth: { xs: '80px', sm: '100px' },
-										verticalAlign: 'middle',
-										textAlign: 'center',
-										padding: '8px',
-										'& span': {
-											display: 'block',
+									<TableCell
+										className="hide-on-mobile"
+										sx={{
+											whiteSpace: 'nowrap',
 											overflow: 'hidden',
 											textOverflow: 'ellipsis',
-											whiteSpace: 'nowrap',
-											width: '120%',
-										},
-									}}
-								>
-									<span>{appointment.phone}</span>
-								</TableCell>
-
-								<TableCell
-									sx={{
-										wordBreak: 'break-word',
-										minHeight: '60px',
-										verticalAlign: 'middle',
-										display: 'table-cell',
-										textAlign: 'center',
-									}}
-								>
-									{appointment.treatment?.name || 'N/A'}
-								</TableCell>
-
-								<TableCell
-									sx={{
-										minHeight: '60px',
-										textAlign: 'center',
-										verticalAlign: 'middle',
-										display: 'table-cell',
-										alignItems: 'center',
-									}}
-								>
-									{format(new Date(appointment.appointmentTime), 'PP')}
-									<br />
-									{format(new Date(appointment.appointmentTime), 'p')}
-								</TableCell>
-
-								<TableCell
-									className="hide-on-mobile"
-									sx={{
-										padding: 0,
-										width: { xs: '15%', sm: '15%' },
-										maxWidth: { xs: '15%', sm: '15%' },
-										minWidth: { xs: '15%', sm: '15%' },
-										verticalAlign: 'top',
-										textAlign: 'left',
-										height: 'auto',
-									}}
-								>
-									<CollapsibleNotesCell notes={appointment.noteHistory} />
-								</TableCell>
-
-								<TableCell
-									sx={{
-										minHeight: '60px',
-										display: 'table-cell',
-										textAlign: 'center',
-										verticalAlign: 'middle',
-										padding: {
-											xs: '4px',
-											sm: '8px',
-										},
-									}}
-								>
-									<Chip
-										label={statusDisplayNames[appointment.status]}
-										color={getStatusColor(appointment.status)}
-										size="small"
-										sx={{
-											minWidth: {
-												xs: '70px',
-												sm: '80px',
-											},
-											fontSize: {
-												xs: '0.7rem',
-												sm: '0.8125rem',
-											},
-											height: {
-												xs: '24px',
-												sm: '32px',
+											width: { xs: '80px', sm: '100px' },
+											maxWidth: { xs: '80px', sm: '100px' },
+											verticalAlign: 'middle',
+											textAlign: 'center',
+											padding: '8px',
+											'& span': {
+												display: 'block',
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+												whiteSpace: 'nowrap',
+												width: '120%',
 											},
 										}}
-									/>
-								</TableCell>
+									>
+										<span>{appointment.phone}</span>
+									</TableCell>
 
-								<TableCell
-									sx={{
-										minHeight: '60px',
-										padding: {
-											xs: '4px',
-											sm: '8px',
-										},
-										textAlign: 'center',
-										verticalAlign: 'middle',
-										width: {
-											xs: '120px',
-											sm: '160px',
-										},
-										minWidth: {
-											xs: '120px',
-											sm: '160px',
-										},
-									}}
-								>
-									{appointment.status !== 'cancelled' &&
-										appointment.status !== 'no_show' &&
-										appointment.status !== 'completed' && (
-											<Box
-												sx={{
-													display: 'inline-flex',
-													flexWrap: 'wrap',
-													justifyContent: 'center',
-													gap: { xs: 0.5, sm: 1 },
-													'& .MuiIconButton-root': {
-														padding: { xs: '2px', sm: '4px' },
-													},
-													'& .MuiSvgIcon-root': {
-														fontSize: { xs: '1rem', sm: '1.25rem' },
-													},
-												}}
-											>
-												{appointment.status === 'confirmed' && (
-													<>
-														<Tooltip title="Mark as Complete" arrow>
-															<IconButton
-																size="small"
-																color="success"
-																onClick={() => {
-																	setSelectedAppointment(appointment);
-																	setCompleteModalOpen(true);
-																}}
-															>
-																<CheckCircleIcon />
-															</IconButton>
-														</Tooltip>
-														<Tooltip title="Reschedule" arrow>
-															<IconButton
-																size="small"
-																color="primary"
-																onClick={() => {
-																	setSelectedAppointment(appointment);
-																	setRescheduleModalOpen(true);
-																}}
-															>
-																<EventRepeatIcon />
-															</IconButton>
-														</Tooltip>
-													</>
-												)}
+									<TableCell
+										sx={{
+											wordBreak: 'break-word',
+											minHeight: '60px',
+											verticalAlign: 'middle',
+											display: 'table-cell',
+											textAlign: 'center',
+										}}
+									>
+										{appointment.treatment?.name || 'N/A'}
+									</TableCell>
 
-												<Tooltip title="Mark as No-Show" arrow>
-													<IconButton
-														size="small"
-														color="error"
-														onClick={() => {
-															setSelectedAppointment(appointment);
-															setNoShowModalOpen(true);
-														}}
-													>
-														<PersonOffIcon />
-													</IconButton>
-												</Tooltip>
+									<TableCell
+										sx={{
+											minHeight: '60px',
+											textAlign: 'center',
+											verticalAlign: 'middle',
+											display: 'table-cell',
+											alignItems: 'center',
+										}}
+									>
+										{format(new Date(appointment.appointmentTime), 'PP')}
+										<br />
+										{format(new Date(appointment.appointmentTime), 'p')}
+									</TableCell>
 
-												{canCancel && (
-													<Tooltip title="Cancel" arrow>
+									<TableCell
+										className="hide-on-mobile"
+										sx={{
+											padding: 0,
+											width: { xs: '15%', sm: '15%' },
+											maxWidth: { xs: '15%', sm: '15%' },
+											minWidth: { xs: '15%', sm: '15%' },
+											verticalAlign: 'top',
+											textAlign: 'left',
+											height: 'auto',
+										}}
+									>
+										<CollapsibleNotesCell notes={appointment.noteHistory} />
+									</TableCell>
+
+									<TableCell
+										sx={{
+											minHeight: '60px',
+											display: 'table-cell',
+											textAlign: 'center',
+											verticalAlign: 'middle',
+											padding: {
+												xs: '4px',
+												sm: '8px',
+											},
+										}}
+									>
+										<Chip
+											label={statusDisplayNames[appointment.status]}
+											color={getStatusColor(appointment.status)}
+											size="small"
+											sx={{
+												minWidth: {
+													xs: '70px',
+													sm: '80px',
+												},
+												fontSize: {
+													xs: '0.7rem',
+													sm: '0.8125rem',
+												},
+												height: {
+													xs: '24px',
+													sm: '32px',
+												},
+											}}
+										/>
+									</TableCell>
+
+									<TableCell
+										sx={{
+											minHeight: '60px',
+											padding: {
+												xs: '4px',
+												sm: '8px',
+											},
+											textAlign: 'center',
+											verticalAlign: 'middle',
+											width: {
+												xs: '120px',
+												sm: '160px',
+											},
+											minWidth: {
+												xs: '120px',
+												sm: '160px',
+											},
+										}}
+									>
+										{appointment.status !== 'cancelled' &&
+											appointment.status !== 'no_show' &&
+											appointment.status !== 'completed' && (
+												<Box
+													sx={{
+														display: 'inline-flex',
+														flexWrap: 'wrap',
+														justifyContent: 'center',
+														gap: { xs: 0.5, sm: 1 },
+														'& .MuiIconButton-root': {
+															padding: { xs: '2px', sm: '4px' },
+														},
+														'& .MuiSvgIcon-root': {
+															fontSize: { xs: '1rem', sm: '1.25rem' },
+														},
+													}}
+												>
+													{appointment.status === 'confirmed' && (
+														<>
+															<Tooltip title="Mark as Complete" arrow>
+																<IconButton
+																	size="small"
+																	color="success"
+																	onClick={() => {
+																		setSelectedAppointment(appointment);
+																		setCompleteModalOpen(true);
+																	}}
+																>
+																	<CheckCircleIcon />
+																</IconButton>
+															</Tooltip>
+															<Tooltip title="Reschedule" arrow>
+																<IconButton
+																	size="small"
+																	color="primary"
+																	onClick={() => {
+																		setSelectedAppointment(appointment);
+																		setRescheduleModalOpen(true);
+																	}}
+																>
+																	<EventRepeatIcon />
+																</IconButton>
+															</Tooltip>
+														</>
+													)}
+
+													<Tooltip title="Mark as No-Show" arrow>
 														<IconButton
 															size="small"
 															color="error"
-															onClick={() => handleCancel(appointment)}
+															onClick={() => {
+																setSelectedAppointment(appointment);
+																setNoShowModalOpen(true);
+															}}
 														>
-															<CancelIcon />
+															<PersonOffIcon />
 														</IconButton>
 													</Tooltip>
-												)}
 
-												<Tooltip title="Send Reminder via WhatsApp" arrow>
-													<IconButton
-														size="small"
-														color="success"
-														onClick={() => {
-															const formattedPhone = appointment.phone.replace(
-																/\D/g,
-																''
-															);
-															const whatsappNumber = formattedPhone.startsWith(
-																'0'
-															)
-																? `60${formattedPhone.substring(1)}`
-																: formattedPhone;
+													{canCancel && (
+														<Tooltip title="Cancel" arrow>
+															<IconButton
+																size="small"
+																color="error"
+																onClick={() => handleCancel(appointment)}
+															>
+																<CancelIcon />
+															</IconButton>
+														</Tooltip>
+													)}
 
-															// Format date and time
-															const appointmentDate = format(
-																new Date(appointment.appointmentTime),
-																'dd MMM yyyy'
-															);
-															const appointmentTime = format(
-																new Date(appointment.appointmentTime),
-																'p'
-															);
-															// Create message with proper spacing using URL encoding
-															const message = encodeURIComponent(
-																`Assalamualaikum / Greetings,\n\n` +
-																	`I am from *Primer Cherang Klinik Ampang* and would like to remind you of your upcoming appointment with the following details:\n\n` +
-																	`*Name:* ${appointment.patientName}\n` +
-																	`*Treatment:* ${appointment.treatment?.name}\n` +
-																	`*Date:* ${appointmentDate}\n` +
-																	`*Time:* ${appointmentTime}\n\n` +
-																	`Please ensure to arrive 10 minutes earlier for your appointment.\n` +
-																	`If you have any questions or need to reschedule, please contact us.\n\n` +
-																	`Thank you for choosing our clinic. See you soon!`
-															);
+													<Tooltip title="Send Reminder via WhatsApp" arrow>
+														<IconButton
+															size="small"
+															color="success"
+															onClick={() => {
+																const formattedPhone =
+																	appointment.phone.replace(/\D/g, '');
+																const whatsappNumber =
+																	formattedPhone.startsWith('0')
+																		? `60${formattedPhone.substring(1)}`
+																		: formattedPhone;
 
-															window.open(
-																`https://wa.me/${whatsappNumber}?text=${message}`,
-																'_blank'
-															);
-														}}
-														sx={{
-															'&.MuiIconButton-colorSuccess': {
-																color: '#25D366',
-															},
-														}}
-													>
-														<WhatsAppIcon />
-													</IconButton>
-												</Tooltip>
-											</Box>
-										)}
+																// Format date and time
+																const appointmentDate = format(
+																	new Date(appointment.appointmentTime),
+																	'dd MMM yyyy'
+																);
+																const appointmentTime = format(
+																	new Date(appointment.appointmentTime),
+																	'p'
+																);
+																// Create message with proper spacing using URL encoding
+																const message = encodeURIComponent(
+																	`Assalamualaikum / Greetings,\n\n` +
+																		`I am from *Primer Cherang Klinik Ampang* and would like to remind you of your upcoming appointment with the following details:\n\n` +
+																		`*Name:* ${appointment.patientName}\n` +
+																		`*Treatment:* ${appointment.treatment?.name}\n` +
+																		`*Date:* ${appointmentDate}\n` +
+																		`*Time:* ${appointmentTime}\n\n` +
+																		`Please ensure to arrive 10 minutes earlier for your appointment.\n` +
+																		`If you have any questions or need to reschedule, please contact us.\n\n` +
+																		`Thank you for choosing our clinic. See you soon!`
+																);
+
+																window.open(
+																	`https://wa.me/${whatsappNumber}?text=${message}`,
+																	'_blank'
+																);
+															}}
+															sx={{
+																'&.MuiIconButton-colorSuccess': {
+																	color: '#25D366',
+																},
+															}}
+														>
+															<WhatsAppIcon />
+														</IconButton>
+													</Tooltip>
+												</Box>
+											)}
+									</TableCell>
+								</TableRow>
+							))
+						) : (
+							<TableRow>
+								<TableCell
+									colSpan={headCells.length}
+									sx={{
+										textAlign: 'center',
+										py: 8,
+										fontSize: '1.1rem',
+										color: 'text.secondary',
+									}}
+								>
+									<Box
+										sx={{
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											gap: 2,
+										}}
+									>
+										{/* You can import and use a NoDataIcon here if you have one */}
+										<Typography variant="h6" color="text.secondary">
+											No appointments found
+										</Typography>
+										<Typography variant="body2" color="text.secondary">
+											{searchTerm ||
+											statusFilter !== 'all' ||
+											treatmentFilter !== 'all' ||
+											dayFilter !== 'all'
+												? 'Try adjusting your filters or search terms'
+												: 'No appointments are currently available'}
+										</Typography>
+									</Box>
 								</TableCell>
 							</TableRow>
-						))}
+						)}
 					</TableBody>
 				</Table>
 			</TableContainer>

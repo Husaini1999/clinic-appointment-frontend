@@ -664,7 +664,7 @@ function Dashboard() {
 					{/* Time Filter */}
 					<Box>
 						<Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-							Filter by Time:
+							Filter by Day:
 						</Typography>
 						<Box sx={mobileResponsiveStyles.chipGroup}>
 							{timeFilterOptions.map((time) => (
