@@ -323,7 +323,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	// Get unique treatments from appointments
 	const treatments = [
 		'all',
-		...new Set(appointments.map((apt) => apt.treatment)),
+		...new Set(appointments.map((apt) => apt.treatment?.name).filter(Boolean)),
 	];
 
 	// Get all possible statuses
@@ -336,7 +336,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 			apt.email.toLowerCase().includes(searchTerm.toLowerCase());
 
 		const matchesTreatment =
-			treatmentFilter === 'all' || apt.treatment === treatmentFilter;
+			treatmentFilter === 'all' || apt.treatment?.name === treatmentFilter;
 		const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
 
 		return matchesSearch && matchesTreatment && matchesStatus;
@@ -870,7 +870,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 										textAlign: 'center',
 									}}
 								>
-									{appointment.treatment}
+									{appointment.treatment?.name || 'N/A'}
 								</TableCell>
 
 								<TableCell
