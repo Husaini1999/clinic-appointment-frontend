@@ -38,6 +38,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import ClearIcon from '@mui/icons-material/Clear';
+import RateReviewIcon from '@mui/icons-material/RateReview';
 
 const statusDisplayNames = {
 	all: 'All',
@@ -933,9 +934,38 @@ function Dashboard() {
 			)}
 
 			{/* Past Appointments Table */}
-			<Typography variant="h5" sx={{ mb: 2, mt: 4 }}>
-				Past Appointments
-			</Typography>
+			<Box
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'space-between',
+					mb: 2,
+					mt: 4,
+				}}
+			>
+				<Typography variant="h5">Past Appointments</Typography>
+				<Button
+					variant="contained"
+					color="primary"
+					startIcon={<RateReviewIcon />}
+					onClick={() =>
+						window.open(
+							'https://www.google.com/maps/place/Primer+Cherang+Clinic+Ampang/@3.1570752,101.7448491,17z/data=!4m8!3m7!1s0x31cc3768ff3ffd97:0xe81dc4d24bb66621!8m2!3d3.1570698!4d101.747424!9m1!1b1!16s%2Fg%2F11sf64b8c2?entry=ttu',
+							'_blank'
+						)
+					}
+					sx={{
+						borderRadius: 2,
+						textTransform: 'none',
+						backgroundColor: '#4285F4', // Google's blue color
+						'&:hover': {
+							backgroundColor: '#3367D6', // Darker shade for hover
+						},
+					}}
+				>
+					Review us on Google
+				</Button>
+			</Box>
 			<TableContainer component={Paper} sx={mergedTableStyles}>
 				<Table
 					sx={{
