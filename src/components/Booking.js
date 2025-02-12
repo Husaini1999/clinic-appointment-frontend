@@ -224,9 +224,12 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 
 	const isWithinBusinessHours = (date) => {
 		if (!date) return false;
-		const hours = date.getHours();
+		// Convert to UTC+8 for business hours check
+		const utc8Hours = date.getUTCHours() + 8;
 		const minutes = date.getMinutes();
-		return hours >= 9 && (hours < 17 || (hours === 17 && minutes === 0));
+		return (
+			utc8Hours >= 9 && (utc8Hours < 17 || (utc8Hours === 17 && minutes === 0))
+		);
 	};
 
 	const isValidAppointmentTime = (date) => {
@@ -253,15 +256,17 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		const slots = [];
 		const startHour = 9;
 		const endHour = 17;
-		const interval = 30; // minutes
+		const interval = 30;
 
 		for (let hour = startHour; hour <= endHour; hour++) {
 			for (let minute = 0; minute < 60; minute += interval) {
 				if (hour === endHour && minute > 0) break;
 
+				// Create a date object for the slot
 				const slotDate = new Date();
-				slotDate.setHours(hour, minute, 0, 0);
-				slots.push(format(slotDate, 'p')); // Using 'p' format for consistent 12-hour time
+				// Convert to UTC+8
+				slotDate.setUTCHours(hour - 8, minute, 0, 0);
+				slots.push(format(slotDate, 'h:mm a'));
 			}
 		}
 		return slots;
@@ -324,9 +329,11 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			// Create appointment with formatted notes
 			const appointmentData = {
 				...formData,
-				status: 'confirmed', // Set default status to confirmed
+				status: 'confirmed',
 				doctorPreference,
-				appointmentTime: formData.appointmentTime.toISOString(), // Just use the direct time
+				appointmentTime: new Date(
+					formData.appointmentTime.getTime() - 8 * 60 * 60 * 1000
+				).toISOString(),
 				phone: cleanPhone,
 				notes: notesWithPreference,
 			};
@@ -794,7 +801,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 											size="small"
 											variant={
 												formData.appointmentTime &&
-												format(formData.appointmentTime, 'p') === slot
+												format(formData.appointmentTime, 'h:mm a') === slot
 													? 'contained'
 													: 'outlined'
 											}
