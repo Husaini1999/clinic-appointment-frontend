@@ -19,15 +19,15 @@ import CategoryServices from './components/CategoryServices';
 const theme = createTheme({
 	palette: {
 		primary: {
-			main: '#1A1A1A',
-			light: '#2C2C2C',
-			dark: '#000000',
+			main: '#2c3e50',
+			light: '#34495e',
+			dark: '#1a252f',
 			contrastText: '#ffffff',
 		},
 		secondary: {
-			main: '#DC2626',
-			light: '#EF4444',
-			dark: '#B91C1C',
+			main: '#ff6b6b',
+			light: '#ff8a80',
+			dark: '#ff5252',
 			contrastText: '#ffffff',
 		},
 		background: {
@@ -35,8 +35,8 @@ const theme = createTheme({
 			paper: '#FFFFFF',
 		},
 		text: {
-			primary: '#1A1A1A',
-			secondary: '#4B5563',
+			primary: '#2c3e50',
+			secondary: '#5a6c7d',
 		},
 	},
 	typography: {

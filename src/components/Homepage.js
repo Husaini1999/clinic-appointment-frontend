@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
 	Container,
@@ -10,6 +10,8 @@ import {
 	IconButton,
 	TextField,
 	InputAdornment,
+	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -18,8 +20,11 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import BookingModal from './Booking';
 import Chatbot from './Chatbot';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import config from '../config';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import SearchIcon from '@mui/icons-material/Search';
 
 function Homepage() {
@@ -29,6 +34,26 @@ function Homepage() {
 	const [searchTerm, setSearchTerm] = useState('');
 	const [visibleCategories, setVisibleCategories] = useState(6);
 	const navigate = useNavigate();
+	const theme = useTheme();
+	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+	// Refs for parallax effects
+	const heroRef = useRef(null);
+	const aboutRef = useRef(null);
+	const servicesRef = useRef(null);
+	const contactRef = useRef(null);
+
+	// Parallax scroll effects
+	const { scrollYProgress } = useScroll();
+	const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
+	const aboutY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
+	const servicesY = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
+
+	// Spring animations for smoother effects
+	const springConfig = { stiffness: 100, damping: 30, restDelta: 0.001 };
+	const heroSpring = useSpring(heroY, springConfig);
+	const aboutSpring = useSpring(aboutY, springConfig);
+	const servicesSpring = useSpring(servicesY, springConfig);
 
 	useEffect(() => {
 		if (location.state?.scrollTo) {
@@ -70,14 +95,17 @@ function Homepage() {
 		<Box sx={{ overflow: 'auto' }}>
 			{/* Hero Section */}
 			<Box
+				ref={heroRef}
 				id="home"
 				sx={{
 					position: 'relative',
-					minHeight: '95vh',
+					minHeight: '100vh',
 					display: 'flex',
 					flexDirection: 'column',
 					justifyContent: 'center',
-					background: 'linear-gradient(135deg, #000000 0%, #1A1A1A 100%)',
+					background:
+						'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
+					overflow: 'hidden',
 					'&::before': {
 						content: '""',
 						position: 'absolute',
@@ -85,154 +113,337 @@ function Homepage() {
 						left: 0,
 						right: 0,
 						bottom: 0,
+						background: `
+							radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+							radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+							radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%)
+						`,
+						zIndex: 1,
+					},
+					'&::after': {
+						content: '""',
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
 						background: 'url(/hero-bg.jpg) center/cover',
-						opacity: 0.1,
+						opacity: 0.05,
 						zIndex: 1,
 					},
 				}}
 			>
+				{/* Floating Medical Icons */}
+				<motion.div
+					style={{
+						position: 'absolute',
+						top: '10%',
+						left: '10%',
+						zIndex: 2,
+						y: heroSpring,
+					}}
+					animate={{
+						y: [0, -20, 0],
+						rotate: [0, 5, 0],
+					}}
+					transition={{
+						duration: 6,
+						repeat: Infinity,
+						ease: 'easeInOut',
+					}}
+				>
+					<HealthAndSafetyIcon
+						sx={{
+							fontSize: 60,
+							color: 'rgba(255, 255, 255, 0.1)',
+							transform: 'rotate(15deg)',
+						}}
+					/>
+				</motion.div>
+
+				<motion.div
+					style={{
+						position: 'absolute',
+						top: '20%',
+						right: '15%',
+						zIndex: 2,
+						y: heroSpring,
+					}}
+					animate={{
+						y: [0, 15, 0],
+						rotate: [0, -5, 0],
+					}}
+					transition={{
+						duration: 8,
+						repeat: Infinity,
+						ease: 'easeInOut',
+						delay: 1,
+					}}
+				>
+					<LocalHospitalIcon
+						sx={{
+							fontSize: 50,
+							color: 'rgba(255, 255, 255, 0.08)',
+							transform: 'rotate(-10deg)',
+						}}
+					/>
+				</motion.div>
+
+				<motion.div
+					style={{
+						position: 'absolute',
+						bottom: '20%',
+						left: '20%',
+						zIndex: 2,
+						y: heroSpring,
+					}}
+					animate={{
+						y: [0, -10, 0],
+						rotate: [0, 8, 0],
+					}}
+					transition={{
+						duration: 7,
+						repeat: Infinity,
+						ease: 'easeInOut',
+						delay: 2,
+					}}
+				>
+					<MedicalServicesIcon
+						sx={{
+							fontSize: 45,
+							color: 'rgba(255, 255, 255, 0.06)',
+							transform: 'rotate(20deg)',
+						}}
+					/>
+				</motion.div>
+
+				<motion.div
+					style={{
+						position: 'absolute',
+						bottom: '15%',
+						right: '10%',
+						zIndex: 2,
+						y: heroSpring,
+					}}
+					animate={{
+						y: [0, 12, 0],
+						rotate: [0, -8, 0],
+					}}
+					transition={{
+						duration: 9,
+						repeat: Infinity,
+						ease: 'easeInOut',
+						delay: 0.5,
+					}}
+				>
+					<FavoriteIcon
+						sx={{
+							fontSize: 40,
+							color: 'rgba(255, 255, 255, 0.05)',
+							transform: 'rotate(-15deg)',
+						}}
+					/>
+				</motion.div>
 				<Container
 					maxWidth="md"
 					sx={{
 						position: 'relative',
-						zIndex: 2,
+						zIndex: 3,
 						textAlign: 'center',
 						py: { xs: 10, md: 16 },
 					}}
 				>
-					<Typography
-						variant="h1"
-						component="h1"
-						gutterBottom
-						sx={{
-							fontSize: { xs: '2.75rem', sm: '3.5rem', md: '4.5rem' },
-							fontWeight: 800,
-							color: 'white',
-							textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-							mb: 4,
-							lineHeight: 1.1,
-							letterSpacing: '-0.02em',
-						}}
+					<motion.div
+						initial={{ opacity: 0, y: 50 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 1, ease: 'easeOut' }}
 					>
-						Welcome to <br />
-						<Box
-							component="span"
+						<Typography
+							variant="h1"
+							component="h1"
+							gutterBottom
 							sx={{
-								color: 'secondary.main',
-								display: 'block',
-								mt: 2,
-							}}
-						>
-							Sunrise Medical Center
-						</Box>
-					</Typography>
-					<Typography
-						variant="h5"
-						sx={{
-							fontSize: { xs: '1.25rem', md: '1.75rem' },
-							mb: 8,
-							color: 'rgba(255,255,255,0.9)',
-							fontWeight: 300,
-							maxWidth: '800px',
-							mx: 'auto',
-							lineHeight: 1.8,
-							letterSpacing: '0.01em',
-						}}
-					>
-						Your Health is Our Priority. Experience compassionate care with our
-						team of dedicated healthcare professionals.
-					</Typography>
-					<Box
-						sx={{
-							display: 'flex',
-							gap: 4,
-							justifyContent: 'center',
-							flexWrap: 'wrap',
-						}}
-					>
-						<Button
-							variant="contained"
-							color="secondary"
-							size="large"
-							sx={{
-								py: 2,
-								px: 6,
-								fontSize: '1.1rem',
-								fontWeight: 600,
-								borderRadius: '50px',
-								'&:hover': {
-									transform: 'translateY(-3px)',
-									boxShadow: '0 6px 20px rgba(220,38,38,0.4)',
-								},
-							}}
-							onClick={handleBookingClick}
-						>
-							Book Appointment
-						</Button>
-						<Button
-							variant="outlined"
-							color="inherit"
-							size="large"
-							sx={{
-								py: 2,
-								px: 6,
-								fontSize: '1.1rem',
-								fontWeight: 600,
-								borderRadius: '50px',
-								borderColor: 'rgba(255,255,255,0.5)',
+								fontSize: { xs: '2.75rem', sm: '3.5rem', md: '4.5rem' },
+								fontWeight: 800,
 								color: 'white',
-								'&:hover': {
-									borderColor: 'white',
-									backgroundColor: 'rgba(255,255,255,0.1)',
-								},
+								textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+								mb: 4,
+								lineHeight: 1.1,
+								letterSpacing: '-0.02em',
+								background: 'linear-gradient(45deg, #ffffff 30%, #e3f2fd 90%)',
+								backgroundClip: 'text',
+								WebkitBackgroundClip: 'text',
+								WebkitTextFillColor: 'transparent',
 							}}
-							onClick={() =>
-								document
-									.getElementById('services')
-									.scrollIntoView({ behavior: 'smooth' })
-							}
 						>
-							Our Services
-						</Button>
-					</Box>
+							Welcome to <br />
+							<motion.span
+								initial={{ opacity: 0, scale: 0.8 }}
+								animate={{ opacity: 1, scale: 1 }}
+								transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' }}
+								style={{
+									color: '#ff6b6b',
+									display: 'block',
+									marginTop: '1rem',
+									background:
+										'linear-gradient(45deg, #ff6b6b 30%, #ffa726 90%)',
+									backgroundClip: 'text',
+									WebkitBackgroundClip: 'text',
+									WebkitTextFillColor: 'transparent',
+								}}
+							>
+								Sunrise Medical Center
+							</motion.span>
+						</Typography>
+					</motion.div>
+
+					<motion.div
+						initial={{ opacity: 0, y: 30 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+					>
+						<Typography
+							variant="h5"
+							sx={{
+								fontSize: { xs: '1.25rem', md: '1.75rem' },
+								mb: 8,
+								color: 'rgba(255,255,255,0.9)',
+								fontWeight: 300,
+								maxWidth: '800px',
+								mx: 'auto',
+								lineHeight: 1.8,
+								letterSpacing: '0.01em',
+							}}
+						>
+							Your Health is Our Priority. Experience compassionate care with
+							our team of dedicated healthcare professionals.
+						</Typography>
+					</motion.div>
+					<motion.div
+						initial={{ opacity: 0, y: 30 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 1, delay: 0.6, ease: 'easeOut' }}
+					>
+						<Box
+							sx={{
+								display: 'flex',
+								gap: 4,
+								justifyContent: 'center',
+								flexWrap: 'wrap',
+							}}
+						>
+							<motion.div
+								whileHover={{ scale: 1.05, y: -5 }}
+								whileTap={{ scale: 0.95 }}
+								transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+							>
+								<Button
+									variant="contained"
+									size="large"
+									sx={{
+										py: 2,
+										px: 6,
+										fontSize: '1.1rem',
+										fontWeight: 600,
+										borderRadius: '50px',
+										background:
+											'linear-gradient(45deg, #ff6b6b 30%, #ffa726 90%)',
+										boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)',
+										'&:hover': {
+											background:
+												'linear-gradient(45deg, #ff5252 30%, #ff9800 90%)',
+											boxShadow: '0 8px 25px rgba(255, 107, 107, 0.5)',
+										},
+									}}
+									onClick={handleBookingClick}
+								>
+									Book Appointment
+								</Button>
+							</motion.div>
+
+							<motion.div
+								whileHover={{ scale: 1.05, y: -5 }}
+								whileTap={{ scale: 0.95 }}
+								transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+							>
+								<Button
+									variant="outlined"
+									size="large"
+									sx={{
+										py: 2,
+										px: 6,
+										fontSize: '1.1rem',
+										fontWeight: 600,
+										borderRadius: '50px',
+										borderColor: 'rgba(255,255,255,0.5)',
+										color: 'white',
+										backdropFilter: 'blur(10px)',
+										'&:hover': {
+											borderColor: 'white',
+											backgroundColor: 'rgba(255,255,255,0.1)',
+											backdropFilter: 'blur(15px)',
+										},
+									}}
+									onClick={() =>
+										document
+											.getElementById('services')
+											.scrollIntoView({ behavior: 'smooth' })
+									}
+								>
+									Our Services
+								</Button>
+							</motion.div>
+						</Box>
+					</motion.div>
 				</Container>
-				<IconButton
-					sx={{
+				<motion.div
+					style={{
 						position: 'absolute',
 						bottom: 40,
 						left: '50%',
 						transform: 'translateX(-50%)',
-						color: 'white',
-						zIndex: 2,
-						animation: 'bounce 2s infinite',
-						'@keyframes bounce': {
-							'0%, 100%': {
-								transform: 'translateX(-50%) translateY(0)',
-							},
-							'50%': {
-								transform: 'translateX(-50%) translateY(10px)',
-							},
-						},
+						zIndex: 3,
 					}}
-					onClick={() =>
-						document
-							.getElementById('services')
-							.scrollIntoView({ behavior: 'smooth' })
-					}
+					animate={{
+						y: [0, 10, 0],
+					}}
+					transition={{
+						duration: 2,
+						repeat: Infinity,
+						ease: 'easeInOut',
+					}}
 				>
-					<KeyboardArrowDownIcon sx={{ fontSize: 48 }} />
-				</IconButton>
+					<IconButton
+						sx={{
+							color: 'white',
+							backgroundColor: 'rgba(255, 255, 255, 0.1)',
+							backdropFilter: 'blur(10px)',
+							border: '1px solid rgba(255, 255, 255, 0.2)',
+							'&:hover': {
+								backgroundColor: 'rgba(255, 255, 255, 0.2)',
+								transform: 'scale(1.1)',
+							},
+						}}
+						onClick={() =>
+							document
+								.getElementById('services')
+								.scrollIntoView({ behavior: 'smooth' })
+						}
+					>
+						<KeyboardArrowDownIcon sx={{ fontSize: 48 }} />
+					</IconButton>
+				</motion.div>
 			</Box>
 
 			{/* About Us Section */}
 			<Box
+				ref={aboutRef}
 				id="about"
 				sx={{
 					py: { xs: 6, md: 10 },
-					bgcolor: '#ffffff',
+					background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
 					position: 'relative',
-					borderBottom: '1px solid',
-					borderColor: 'grey.100',
+					overflow: 'hidden',
 					'&::before': {
 						content: '""',
 						position: 'absolute',
@@ -241,26 +452,49 @@ function Homepage() {
 						right: 0,
 						height: '8px',
 						background:
-							'linear-gradient(180deg, rgba(0,0,0,0.03) 0%, transparent 100%)',
+							'linear-gradient(90deg, #ff6b6b 0%, #ffa726 50%, #ff6b6b 100%)',
+					},
+					'&::after': {
+						content: '""',
+						position: 'absolute',
+						top: '-50%',
+						right: '-20%',
+						width: '40%',
+						height: '200%',
+						background:
+							'radial-gradient(circle, rgba(255, 107, 107, 0.05) 0%, transparent 70%)',
+						transform: 'rotate(15deg)',
+						zIndex: 1,
 					},
 				}}
 			>
-				<Container maxWidth="lg">
-					<Typography
-						variant="h2"
-						component="h2"
-						gutterBottom
-						align="center"
-						sx={{
-							fontSize: { xs: '2.5rem', md: '3.5rem' },
-							mb: 5,
-							color: '#000000',
-							fontWeight: 700,
-							letterSpacing: '-0.02em',
-						}}
+				<Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+					<motion.div
+						initial={{ opacity: 0, y: 50 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.8, ease: 'easeOut' }}
+						viewport={{ once: true }}
 					>
-						About Us
-					</Typography>
+						<Typography
+							variant="h2"
+							component="h2"
+							gutterBottom
+							align="center"
+							sx={{
+								fontSize: { xs: '2.5rem', md: '3.5rem' },
+								mb: 5,
+								background: 'linear-gradient(45deg, #2c3e50 30%, #34495e 90%)',
+								backgroundClip: 'text',
+								WebkitBackgroundClip: 'text',
+								WebkitTextFillColor: 'transparent',
+								fontWeight: 700,
+								letterSpacing: '-0.02em',
+							}}
+						>
+							About Us
+						</Typography>
+					</motion.div>
+
 					<Box
 						sx={{
 							mb: 4,
@@ -269,88 +503,145 @@ function Homepage() {
 							mx: 'auto',
 						}}
 					>
-						<HealthAndSafetyIcon
-							sx={{
-								fontSize: 72,
-								color: 'secondary.main',
-								mb: 4,
-							}}
-						/>
-						<Typography
-							variant="body1"
-							paragraph
-							sx={{
-								lineHeight: 1.8,
-								fontSize: '1.125rem',
-								color: 'text.primary',
-								mb: 3,
-							}}
+						<motion.div
+							initial={{ opacity: 0, scale: 0.5 }}
+							whileInView={{ opacity: 1, scale: 1 }}
+							transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+							viewport={{ once: true }}
 						>
-							Welcome to Sunrise Medical Center! Our mission is to provide
-							compassionate and high-quality healthcare to our community. We
-							believe in treating our patients with respect and dignity,
-							ensuring that they receive the best possible care.
-						</Typography>
-						<Typography
-							variant="body1"
-							paragraph
-							sx={{
-								lineHeight: 1.8,
-								fontSize: '1.125rem',
-								color: 'text.primary',
-								mb: 3,
-							}}
+							<HealthAndSafetyIcon
+								sx={{
+									fontSize: 72,
+									color: '#ff6b6b',
+									mb: 4,
+									filter: 'drop-shadow(0 4px 8px rgba(255, 107, 107, 0.3))',
+								}}
+							/>
+						</motion.div>
+						<motion.div
+							initial={{ opacity: 0, y: 30 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
+							viewport={{ once: true }}
 						>
-							Our team of dedicated healthcare professionals is committed to
-							your health and well-being. With years of experience in various
-							medical fields, we are here to support you and your family with
-							all your healthcare needs.
-						</Typography>
-						<Typography
-							variant="body1"
-							paragraph
-							sx={{
-								lineHeight: 1.8,
-								fontSize: '1.125rem',
-								color: 'text.primary',
-								mb: 3,
-							}}
+							<Typography
+								variant="body1"
+								paragraph
+								sx={{
+									lineHeight: 1.8,
+									fontSize: '1.125rem',
+									color: '#2c3e50',
+									mb: 3,
+									fontWeight: 400,
+								}}
+							>
+								Welcome to Sunrise Medical Center! Our mission is to provide
+								compassionate and high-quality healthcare to our community. We
+								believe in treating our patients with respect and dignity,
+								ensuring that they receive the best possible care.
+							</Typography>
+						</motion.div>
+
+						<motion.div
+							initial={{ opacity: 0, y: 30 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.8, delay: 0.6, ease: 'easeOut' }}
+							viewport={{ once: true }}
 						>
-							At Primer Clinic, we offer a wide range of services, including
-							general checkups, dental care, physiotherapy, and more. We strive
-							to create a welcoming environment where you can feel comfortable
-							and cared for.
-						</Typography>
-						<Button
-							variant="text"
-							color="secondary"
-							size="large"
-							sx={{
-								mt: 4,
-								py: 2,
-								px: 4,
-								fontSize: '1rem',
-								fontWeight: 600,
-							}}
-							onClick={() =>
-								document
-									.getElementById('services')
-									.scrollIntoView({ behavior: 'smooth' })
-							}
+							<Typography
+								variant="body1"
+								paragraph
+								sx={{
+									lineHeight: 1.8,
+									fontSize: '1.125rem',
+									color: '#2c3e50',
+									mb: 3,
+									fontWeight: 400,
+								}}
+							>
+								Our team of dedicated healthcare professionals is committed to
+								your health and well-being. With years of experience in various
+								medical fields, we are here to support you and your family with
+								all your healthcare needs.
+							</Typography>
+						</motion.div>
+
+						<motion.div
+							initial={{ opacity: 0, y: 30 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.8, delay: 0.8, ease: 'easeOut' }}
+							viewport={{ once: true }}
 						>
-							Explore Our Services
-						</Button>
+							<Typography
+								variant="body1"
+								paragraph
+								sx={{
+									lineHeight: 1.8,
+									fontSize: '1.125rem',
+									color: '#2c3e50',
+									mb: 3,
+									fontWeight: 400,
+								}}
+							>
+								At Sunrise Medical Center, we offer a wide range of services,
+								including general checkups, dental care, physiotherapy, and
+								more. We strive to create a welcoming environment where you can
+								feel comfortable and cared for.
+							</Typography>
+						</motion.div>
+
+						<motion.div
+							initial={{ opacity: 0, y: 30 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.8, delay: 1, ease: 'easeOut' }}
+							viewport={{ once: true }}
+						>
+							<motion.div
+								whileHover={{ scale: 1.05 }}
+								whileTap={{ scale: 0.95 }}
+							>
+								<Button
+									variant="contained"
+									size="large"
+									sx={{
+										mt: 4,
+										py: 2,
+										px: 4,
+										fontSize: '1rem',
+										fontWeight: 600,
+										borderRadius: '50px',
+										background:
+											'linear-gradient(45deg, #ff6b6b 30%, #ffa726 90%)',
+										boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)',
+										'&:hover': {
+											background:
+												'linear-gradient(45deg, #ff5252 30%, #ff9800 90%)',
+											boxShadow: '0 8px 25px rgba(255, 107, 107, 0.5)',
+										},
+									}}
+									onClick={() =>
+										document
+											.getElementById('services')
+											.scrollIntoView({ behavior: 'smooth' })
+									}
+								>
+									Explore Our Services
+								</Button>
+							</motion.div>
+						</motion.div>
 					</Box>
 				</Container>
 			</Box>
 
 			{/* Services Section */}
 			<Box
+				ref={servicesRef}
 				id="services"
 				sx={{
 					py: { xs: 6, md: 10 },
-					bgcolor: '#f8f9fa',
+					background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
 					position: 'relative',
+					overflow: 'hidden',
 					'&::before': {
 						content: '""',
 						position: 'absolute',
@@ -359,64 +650,99 @@ function Homepage() {
 						right: 0,
 						height: '8px',
 						background:
-							'linear-gradient(180deg, rgba(0,0,0,0.03) 0%, transparent 100%)',
+							'linear-gradient(90deg, #ff6b6b 0%, #ffa726 50%, #ff6b6b 100%)',
+					},
+					'&::after': {
+						content: '""',
+						position: 'absolute',
+						top: '-30%',
+						left: '-10%',
+						width: '30%',
+						height: '160%',
+						background:
+							'radial-gradient(circle, rgba(255, 167, 38, 0.05) 0%, transparent 70%)',
+						transform: 'rotate(-15deg)',
+						zIndex: 1,
 					},
 				}}
 			>
-				<Container maxWidth="lg">
-					<Typography
-						variant="h2"
-						component="h2"
-						gutterBottom
-						align="center"
-						sx={{
-							fontSize: { xs: '2.5rem', md: '3.5rem' },
-							mb: 2,
-							color: '#000000',
-							fontWeight: 700,
-							letterSpacing: '-0.02em',
-						}}
+				<Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+					<motion.div
+						initial={{ opacity: 0, y: 50 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.8, ease: 'easeOut' }}
+						viewport={{ once: true }}
 					>
-						Our Services
-					</Typography>
+						<Typography
+							variant="h2"
+							component="h2"
+							gutterBottom
+							align="center"
+							sx={{
+								fontSize: { xs: '2.5rem', md: '3.5rem' },
+								mb: 2,
+								background: 'linear-gradient(45deg, #2c3e50 30%, #34495e 90%)',
+								backgroundClip: 'text',
+								WebkitBackgroundClip: 'text',
+								WebkitTextFillColor: 'transparent',
+								fontWeight: 700,
+								letterSpacing: '-0.02em',
+							}}
+						>
+							Our Services
+						</Typography>
+					</motion.div>
 
 					{/* Search Bar */}
-					<Box
-						sx={{
-							mb: 5,
-							mt: 2,
-							display: 'flex',
-							justifyContent: 'center',
-							maxWidth: '600px',
-							mx: 'auto',
-						}}
+					<motion.div
+						initial={{ opacity: 0, y: 30 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+						viewport={{ once: true }}
 					>
-						<TextField
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-							placeholder="Search services..."
-							variant="outlined"
-							fullWidth
+						<Box
 							sx={{
-								backgroundColor: 'white',
-								borderRadius: 2,
-								'& .MuiOutlinedInput-root': {
-									fontSize: '1.1rem',
-									py: 1,
-									'&:hover fieldset': {
-										borderColor: 'grey.400',
+								mb: 5,
+								mt: 2,
+								display: 'flex',
+								justifyContent: 'center',
+								maxWidth: '600px',
+								mx: 'auto',
+							}}
+						>
+							<TextField
+								value={searchTerm}
+								onChange={(e) => setSearchTerm(e.target.value)}
+								placeholder="Search services..."
+								variant="outlined"
+								fullWidth
+								sx={{
+									backgroundColor: 'white',
+									borderRadius: '50px',
+									boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+									'& .MuiOutlinedInput-root': {
+										fontSize: '1.1rem',
+										py: 1,
+										borderRadius: '50px',
+										'&:hover fieldset': {
+											borderColor: '#ff6b6b',
+										},
+										'&.Mui-focused fieldset': {
+											borderColor: '#ff6b6b',
+											borderWidth: 2,
+										},
 									},
-								},
-							}}
-							InputProps={{
-								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon sx={{ color: 'grey.600' }} />
-									</InputAdornment>
-								),
-							}}
-						/>
-					</Box>
+								}}
+								InputProps={{
+									startAdornment: (
+										<InputAdornment position="start">
+											<SearchIcon sx={{ color: '#ff6b6b' }} />
+										</InputAdornment>
+									),
+								}}
+							/>
+						</Box>
+					</motion.div>
 
 					<Grid container spacing={4}>
 						{filteredCategories
@@ -424,23 +750,31 @@ function Homepage() {
 							.map((category, index) => (
 								<Grid item xs={12} sm={6} md={4} key={category._id}>
 									<motion.div
-										initial={{ opacity: 0, y: 20 }}
-										animate={{ opacity: 1, y: 0 }}
+										initial={{ opacity: 0, y: 50, scale: 0.9 }}
+										whileInView={{ opacity: 1, y: 0, scale: 1 }}
 										transition={{
-											duration: 0.5,
-											delay: index * 0.1, // Stagger effect
+											duration: 0.6,
+											delay: index * 0.1,
 											ease: 'easeOut',
 										}}
+										viewport={{ once: true }}
+										whileHover={{ y: -10, scale: 1.02 }}
 									>
 										<Paper
 											sx={{
 												p: 3,
 												height: '100%',
 												cursor: 'pointer',
-												transition: 'all 0.3s ease',
+												borderRadius: '20px',
+												background:
+													'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+												boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+												border: '1px solid rgba(255, 107, 107, 0.1)',
+												transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
 												'&:hover': {
-													transform: 'translateY(-5px)',
-													boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+													transform: 'translateY(-10px) scale(1.02)',
+													boxShadow: '0 20px 40px rgba(255, 107, 107, 0.2)',
+													border: '1px solid rgba(255, 107, 107, 0.3)',
 												},
 											}}
 											onClick={() => navigate(`/category/${category._id}`)}
@@ -454,8 +788,12 @@ function Homepage() {
 														width: '100%',
 														height: 200,
 														objectFit: 'cover',
-														borderRadius: 1,
+														borderRadius: '15px',
 														mb: 2,
+														transition: 'transform 0.3s ease',
+														'&:hover': {
+															transform: 'scale(1.05)',
+														},
 													}}
 												/>
 											) : (
@@ -463,12 +801,17 @@ function Homepage() {
 													sx={{
 														width: '100%',
 														height: 200,
-														bgcolor: 'primary.light',
-														borderRadius: 1,
+														background:
+															'linear-gradient(135deg, #ff6b6b 0%, #ffa726 100%)',
+														borderRadius: '15px',
 														mb: 2,
 														display: 'flex',
 														alignItems: 'center',
 														justifyContent: 'center',
+														transition: 'transform 0.3s ease',
+														'&:hover': {
+															transform: 'scale(1.05)',
+														},
 													}}
 												>
 													<HealthAndSafetyIcon
@@ -481,15 +824,22 @@ function Homepage() {
 												gutterBottom
 												sx={{
 													fontWeight: 600,
-													color: 'primary.main',
+													background:
+														'linear-gradient(45deg, #2c3e50 30%, #34495e 90%)',
+													backgroundClip: 'text',
+													WebkitBackgroundClip: 'text',
+													WebkitTextFillColor: 'transparent',
 													mb: 2,
 												}}
 											>
 												{category.name}
 											</Typography>
 											<Typography
-												color="text.secondary"
-												sx={{ lineHeight: 1.7 }}
+												sx={{
+													lineHeight: 1.7,
+													color: '#5a6c7d',
+													fontSize: '0.95rem',
+												}}
 											>
 												{category.description}
 											</Typography>
@@ -501,23 +851,40 @@ function Homepage() {
 
 					{/* Load More Button */}
 					{filteredCategories.length > visibleCategories && (
-						<Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
-							<Button
-								variant="outlined"
-								color="primary"
-								onClick={handleLoadMore}
-								sx={{
-									py: 1,
-									px: 4,
-									borderRadius: '50px',
-									'&:hover': {
-										transform: 'translateY(-2px)',
-									},
-								}}
-							>
-								Load More
-							</Button>
-						</Box>
+						<motion.div
+							initial={{ opacity: 0, y: 30 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.8, ease: 'easeOut' }}
+							viewport={{ once: true }}
+						>
+							<Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+								<motion.div
+									whileHover={{ scale: 1.05, y: -5 }}
+									whileTap={{ scale: 0.95 }}
+								>
+									<Button
+										variant="contained"
+										onClick={handleLoadMore}
+										sx={{
+											py: 2,
+											px: 6,
+											borderRadius: '50px',
+											background:
+												'linear-gradient(45deg, #ff6b6b 30%, #ffa726 90%)',
+											boxShadow: '0 4px 15px rgba(255, 107, 107, 0.3)',
+											fontWeight: 600,
+											'&:hover': {
+												background:
+													'linear-gradient(45deg, #ff5252 30%, #ff9800 90%)',
+												boxShadow: '0 8px 25px rgba(255, 107, 107, 0.5)',
+											},
+										}}
+									>
+										Load More
+									</Button>
+								</motion.div>
+							</Box>
+						</motion.div>
 					)}
 
 					{/* No Results Message */}
@@ -533,149 +900,236 @@ function Homepage() {
 
 			{/* Contact Section */}
 			<Box
+				ref={contactRef}
 				id="contact"
 				sx={{
 					py: { xs: 6, md: 10 },
-					bgcolor: '#000000',
+					background:
+						'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
 					color: 'white',
 					position: 'relative',
+					overflow: 'hidden',
+					'&::before': {
+						content: '""',
+						position: 'absolute',
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						background: `
+							radial-gradient(circle at 30% 20%, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
+							radial-gradient(circle at 70% 80%, rgba(255, 167, 38, 0.1) 0%, transparent 50%)
+						`,
+						zIndex: 1,
+					},
 				}}
 			>
-				<Container maxWidth="lg">
-					<Typography
-						variant="h2"
-						component="h2"
-						gutterBottom
-						align="center"
-						sx={{
-							fontSize: { xs: '2.5rem', md: '3.5rem' },
-							mb: 5,
-							fontWeight: 700,
-							letterSpacing: '-0.02em',
-						}}
+				<Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+					<motion.div
+						initial={{ opacity: 0, y: 50 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.8, ease: 'easeOut' }}
+						viewport={{ once: true }}
 					>
-						Contact Us
-					</Typography>
+						<Typography
+							variant="h2"
+							component="h2"
+							gutterBottom
+							align="center"
+							sx={{
+								fontSize: { xs: '2.5rem', md: '3.5rem' },
+								mb: 5,
+								fontWeight: 700,
+								letterSpacing: '-0.02em',
+								background: 'linear-gradient(45deg, #ffffff 30%, #e3f2fd 90%)',
+								backgroundClip: 'text',
+								WebkitBackgroundClip: 'text',
+								WebkitTextFillColor: 'transparent',
+							}}
+						>
+							Contact Us
+						</Typography>
+					</motion.div>
+
 					<Grid container spacing={4}>
 						<Grid item xs={12} md={4}>
-							<Paper
-								sx={{
-									p: 5,
-									height: '100%',
-									transition: 'all 0.3s ease',
-									backgroundColor: 'rgba(255,255,255,0.98)',
-									'&:hover': {
-										transform: 'translateY(-5px)',
-										boxShadow: '0 12px 28px rgba(255,0,0,0.2)',
-									},
-								}}
+							<motion.div
+								initial={{ opacity: 0, y: 30 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+								viewport={{ once: true }}
+								whileHover={{ y: -10, scale: 1.02 }}
 							>
-								<LocationOnIcon
-									sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }}
-								/>
-								<Typography
-									variant="h6"
-									gutterBottom
+								<Paper
 									sx={{
-										fontSize: '1.25rem',
-										fontWeight: 600,
-										color: '#000000',
-										mb: 2,
+										p: 5,
+										height: '100%',
+										borderRadius: '20px',
+										background:
+											'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%)',
+										backdropFilter: 'blur(10px)',
+										border: '1px solid rgba(255, 255, 255, 0.2)',
+										boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+										transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+										'&:hover': {
+											transform: 'translateY(-10px) scale(1.02)',
+											boxShadow: '0 20px 40px rgba(255, 107, 107, 0.2)',
+											border: '1px solid rgba(255, 107, 107, 0.3)',
+										},
 									}}
 								>
-									Location
-								</Typography>
-								<Typography
-									sx={{
-										fontSize: '1.1rem',
-										color: '#666666',
-										lineHeight: 1.8,
-									}}
-								>
-									123 Health Street, Medical District, 50000 Kuala Lumpur,
-									Malaysia.
-								</Typography>
-							</Paper>
+									<LocationOnIcon
+										sx={{
+											fontSize: 40,
+											color: '#ff6b6b',
+											mb: 2,
+											filter: 'drop-shadow(0 2px 4px rgba(255, 107, 107, 0.3))',
+										}}
+									/>
+									<Typography
+										variant="h6"
+										gutterBottom
+										sx={{
+											fontSize: '1.25rem',
+											fontWeight: 600,
+											color: '#2c3e50',
+											mb: 2,
+										}}
+									>
+										Location
+									</Typography>
+									<Typography
+										sx={{
+											fontSize: '1.1rem',
+											color: '#5a6c7d',
+											lineHeight: 1.8,
+										}}
+									>
+										123 Health Street, Medical District, 50000 Kuala Lumpur,
+										Malaysia.
+									</Typography>
+								</Paper>
+							</motion.div>
 						</Grid>
+
 						<Grid item xs={12} md={4}>
-							<Paper
-								sx={{
-									p: 5,
-									height: '100%',
-									transition: 'all 0.3s ease',
-									backgroundColor: 'rgba(255,255,255,0.98)',
-									'&:hover': {
-										transform: 'translateY(-5px)',
-										boxShadow: '0 12px 28px rgba(255,0,0,0.2)',
-									},
-								}}
+							<motion.div
+								initial={{ opacity: 0, y: 30 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.8, delay: 0.4, ease: 'easeOut' }}
+								viewport={{ once: true }}
+								whileHover={{ y: -10, scale: 1.02 }}
 							>
-								<PhoneIcon
-									sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }}
-								/>
-								<Typography
-									variant="h6"
-									gutterBottom
+								<Paper
 									sx={{
-										fontSize: '1.25rem',
-										fontWeight: 600,
-										color: '#000000',
-										mb: 2,
+										p: 5,
+										height: '100%',
+										borderRadius: '20px',
+										background:
+											'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%)',
+										backdropFilter: 'blur(10px)',
+										border: '1px solid rgba(255, 255, 255, 0.2)',
+										boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+										transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+										'&:hover': {
+											transform: 'translateY(-10px) scale(1.02)',
+											boxShadow: '0 20px 40px rgba(255, 107, 107, 0.2)',
+											border: '1px solid rgba(255, 107, 107, 0.3)',
+										},
 									}}
 								>
-									Phone
-								</Typography>
-								<Typography
-									sx={{
-										fontSize: '1.1rem',
-										color: '#666666',
-										lineHeight: 1.8,
-									}}
-								>
-									+60 12-345 6789
-								</Typography>
-							</Paper>
+									<PhoneIcon
+										sx={{
+											fontSize: 40,
+											color: '#ff6b6b',
+											mb: 2,
+											filter: 'drop-shadow(0 2px 4px rgba(255, 107, 107, 0.3))',
+										}}
+									/>
+									<Typography
+										variant="h6"
+										gutterBottom
+										sx={{
+											fontSize: '1.25rem',
+											fontWeight: 600,
+											color: '#2c3e50',
+											mb: 2,
+										}}
+									>
+										Phone
+									</Typography>
+									<Typography
+										sx={{
+											fontSize: '1.1rem',
+											color: '#5a6c7d',
+											lineHeight: 1.8,
+										}}
+									>
+										+60 12-345 6789
+									</Typography>
+								</Paper>
+							</motion.div>
 						</Grid>
+
 						<Grid item xs={12} md={4}>
-							<Paper
-								sx={{
-									p: 5,
-									height: '100%',
-									transition: 'all 0.3s ease',
-									backgroundColor: 'rgba(255,255,255,0.98)',
-									'&:hover': {
-										transform: 'translateY(-5px)',
-										boxShadow: '0 12px 28px rgba(255,0,0,0.2)',
-									},
-								}}
+							<motion.div
+								initial={{ opacity: 0, y: 30 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								transition={{ duration: 0.8, delay: 0.6, ease: 'easeOut' }}
+								viewport={{ once: true }}
+								whileHover={{ y: -10, scale: 1.02 }}
 							>
-								<EmailIcon
-									sx={{ fontSize: 40, color: 'secondary.main', mb: 2 }}
-								/>
-								<Typography
-									variant="h6"
-									gutterBottom
+								<Paper
 									sx={{
-										fontSize: '1.25rem',
-										fontWeight: 600,
-										color: '#000000',
-										mb: 2,
+										p: 5,
+										height: '100%',
+										borderRadius: '20px',
+										background:
+											'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,249,250,0.95) 100%)',
+										backdropFilter: 'blur(10px)',
+										border: '1px solid rgba(255, 255, 255, 0.2)',
+										boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+										transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+										'&:hover': {
+											transform: 'translateY(-10px) scale(1.02)',
+											boxShadow: '0 20px 40px rgba(255, 107, 107, 0.2)',
+											border: '1px solid rgba(255, 107, 107, 0.3)',
+										},
 									}}
 								>
-									Email
-								</Typography>
-								<Typography
-									sx={{
-										fontSize: '1.1rem',
-										color: '#666666',
-										lineHeight: 1.8,
-									}}
-								>
-									info@sunrisemedical.com
-									<br />
-									support@sunrisemedical.com
-								</Typography>
-							</Paper>
+									<EmailIcon
+										sx={{
+											fontSize: 40,
+											color: '#ff6b6b',
+											mb: 2,
+											filter: 'drop-shadow(0 2px 4px rgba(255, 107, 107, 0.3))',
+										}}
+									/>
+									<Typography
+										variant="h6"
+										gutterBottom
+										sx={{
+											fontSize: '1.25rem',
+											fontWeight: 600,
+											color: '#2c3e50',
+											mb: 2,
+										}}
+									>
+										Email
+									</Typography>
+									<Typography
+										sx={{
+											fontSize: '1.1rem',
+											color: '#5a6c7d',
+											lineHeight: 1.8,
+										}}
+									>
+										info@sunrisemedical.com
+										<br />
+										support@sunrisemedical.com
+									</Typography>
+								</Paper>
+							</motion.div>
 						</Grid>
 					</Grid>
 				</Container>

@@ -243,10 +243,16 @@ const Chatbot = () => {
 	const theme = createTheme({
 		palette: {
 			primary: {
-				main: '#000000',
-				light: '#B3B3B3',
-				dark: '#1A1A1A',
+				main: '#2c3e50',
+				light: '#34495e',
+				dark: '#1a252f',
 				contrastText: '#FFFFFF',
+			},
+			secondary: {
+				main: '#ff6b6b',
+				light: '#ff8a80',
+				dark: '#ff5252',
+				contrastText: '#ffffff',
 			},
 		},
 	});

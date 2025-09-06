@@ -273,7 +273,7 @@ function Navbar({ mobileOpen, onMobileClose }) {
 									borderRadius: '50px',
 									boxShadow: 'none',
 									'&:hover': {
-										boxShadow: '0 4px 12px rgba(220,38,38,0.2)',
+										boxShadow: '0 4px 12px rgba(255,107,107,0.2)',
 										backgroundColor: 'secondary.dark',
 									},
 								}}
@@ -294,7 +294,7 @@ function Navbar({ mobileOpen, onMobileClose }) {
 									borderRadius: '50px',
 									boxShadow: 'none',
 									'&:hover': {
-										boxShadow: '0 4px 12px rgba(220,38,38,0.2)',
+										boxShadow: '0 4px 12px rgba(255,107,107,0.2)',
 										backgroundColor: 'secondary.dark',
 									},
 								}}
