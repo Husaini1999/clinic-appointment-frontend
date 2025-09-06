@@ -340,13 +340,15 @@ function Login() {
 					Login
 				</Typography>
 
-				{formData.email && formData.password && (
-					<Alert severity="success" sx={{ mb: 2 }}>
-						<Typography variant="body2" sx={{ fontWeight: 600 }}>
-							✅ Demo credentials loaded! Click "Sign In" to start exploring.
-						</Typography>
-					</Alert>
-				)}
+				{DEMO_CONFIG.ENABLE_DEMO_MODE &&
+					formData.email &&
+					formData.password && (
+						<Alert severity="success" sx={{ mb: 2 }}>
+							<Typography variant="body2" sx={{ fontWeight: 600 }}>
+								✅ Demo credentials loaded! Click "Sign In" to start exploring.
+							</Typography>
+						</Alert>
+					)}
 				{error && (
 					<Alert severity="error" sx={{ mt: 2 }}>
 						{error}
