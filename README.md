@@ -2,7 +2,7 @@
 
 A comprehensive, modern clinic appointment management system built with React.js, featuring role-based access control, real-time appointment booking, and an intelligent AI chatbot assistant.
 
-![Sunrise Medical Center](https://img.shields.io/badge/Sunrise-Medical%20Center-orange?style=for-the-badge&logo=medical-bag)
+![Sunrise Medical Center](https://img.shields.io/badge/Sunrise-Medical-Center-orange?style=for-the-badge&logo=medical-bag)
 ![React](https://img.shields.io/badge/React-18.2.0-blue?style=for-the-badge&logo=react)
 ![Material-UI](https://img.shields.io/badge/Material--UI-5.15.12-blue?style=for-the-badge&logo=mui)
 ![Framer Motion](https://img.shields.io/badge/Framer%20Motion-11.15.0-purple?style=for-the-badge&logo=framer)
