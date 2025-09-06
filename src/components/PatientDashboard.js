@@ -944,7 +944,7 @@ function Dashboard() {
 				}}
 			>
 				<Typography variant="h5">Past Appointments</Typography>
-				<Button
+				{/* <Button
 					variant="contained"
 					color="primary"
 					startIcon={<RateReviewIcon />}
@@ -964,7 +964,7 @@ function Dashboard() {
 					}}
 				>
 					Review us on Google
-				</Button>
+				</Button> */}
 			</Box>
 			<TableContainer component={Paper} sx={mergedTableStyles}>
 				<Table
