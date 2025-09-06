@@ -24,7 +24,6 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import MedicalServicesIcon from '@mui/icons-material/MedicalServices';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import config from '../config';
-import DEMO_CONFIG from '../config/demo';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import SearchIcon from '@mui/icons-material/Search';
 
@@ -94,27 +93,6 @@ function Homepage() {
 
 	return (
 		<Box sx={{ overflow: 'auto' }}>
-			{/* Demo Mode Banner */}
-			{DEMO_CONFIG.ENABLE_DEMO_MODE && (
-				<Box
-					sx={{
-						background: 'linear-gradient(135deg, #ffa726 0%, #ff9800 100%)',
-						color: 'white',
-						py: 1,
-						textAlign: 'center',
-						position: 'sticky',
-						top: 0,
-						zIndex: 1000,
-						boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-					}}
-				>
-					<Typography variant="body2" sx={{ fontWeight: 600 }}>
-						🚀 DEMO MODE ACTIVE - Click "Login" to start exploring with demo
-						credentials
-					</Typography>
-				</Box>
-			)}
-
 			{/* Hero Section */}
 			<Box
 				ref={heroRef}

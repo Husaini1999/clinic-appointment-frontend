@@ -14,6 +14,7 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import Navbar from './Navbar';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { DEMO_CONFIG } from '../config/demo';
 
 const Header = () => {
 	const theme = useTheme();
@@ -51,7 +52,7 @@ const Header = () => {
 					bgcolor: 'rgba(255, 255, 255, 0.95)',
 					backdropFilter: 'blur(8px)',
 					boxShadow: '0 2px 20px rgba(0,0,0,0.05)',
-					borderBottom: '1px solid rgba(0,0,0,0.05)',
+					borderBottom: '0px solid rgba(0,0,0,0.05)',
 				}}
 			>
 				<Container maxWidth="xl">
@@ -116,6 +117,26 @@ const Header = () => {
 						)}
 					</Toolbar>
 				</Container>
+				{/* Demo Mode Banner */}
+				{DEMO_CONFIG.ENABLE_DEMO_MODE && (
+					<Box
+						sx={{
+							background: 'linear-gradient(135deg, #ffa726 0%, #ff9800 100%)',
+							color: 'white',
+							py: 1,
+							textAlign: 'center',
+							position: 'sticky',
+							top: 0,
+							zIndex: 999,
+							boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+						}}
+					>
+						<Typography variant="body2" sx={{ fontWeight: 600 }}>
+							🚀 DEMO MODE ACTIVE - Click "Login" to start exploring with demo
+							credentials
+						</Typography>
+					</Box>
+				)}
 			</AppBar>
 		</HideOnScroll>
 	);
