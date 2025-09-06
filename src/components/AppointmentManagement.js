@@ -1113,7 +1113,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 																// Create message with proper spacing using URL encoding
 																const message = encodeURIComponent(
 																	`Assalamualaikum / Greetings,\n\n` +
-																		`I am from *Primer Cherang Klinik Ampang* and would like to remind you of your upcoming appointment with the following details:\n\n` +
+																		`I am from *Sunrise Medical Center* and would like to remind you of your upcoming appointment with the following details:\n\n` +
 																		`*Name:* ${appointment.patientName}\n` +
 																		`*Treatment:* ${appointment.treatment?.name}\n` +
 																		`*Date:* ${appointmentDate}\n` +

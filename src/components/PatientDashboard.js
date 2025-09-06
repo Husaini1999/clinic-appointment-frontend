@@ -950,7 +950,7 @@ function Dashboard() {
 					startIcon={<RateReviewIcon />}
 					onClick={() =>
 						window.open(
-							'https://www.google.com/maps/place/Primer+Cherang+Clinic+Ampang/@3.1570752,101.7448491,17z/data=!4m8!3m7!1s0x31cc3768ff3ffd97:0xe81dc4d24bb66621!8m2!3d3.1570698!4d101.747424!9m1!1b1!16s%2Fg%2F11sf64b8c2?entry=ttu',
+							'https://www.google.com/maps/place/Sunrise+Medical+Center/@3.1390,101.6869,17z/data=!4m8!3m7!1s0x31cc3768ff3ffd97:0xe81dc4d24bb66621!8m2!3d3.1390!4d101.6869!9m1!1b1!16s%2Fg%2F11sf64b8c2?entry=ttu',
 							'_blank'
 						)
 					}

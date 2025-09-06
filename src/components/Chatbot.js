@@ -144,7 +144,7 @@ const intentPatterns = {
 		'directions',
 		'where is the clinic',
 		'clinic address',
-		'where is primer cherang',
+		'where is sunrise medical',
 		'ampang clinic',
 	],
 	contact: [
@@ -167,10 +167,10 @@ const intentPatterns = {
 // Add more response variations
 const responseVariations = {
 	welcome: [
-		"Welcome to Primer Cherang Clinic Ampang's virtual assistant! How can I help you today?",
-		"Hi there! I'm here to assist you with your medical needs at Primer Cherang Clinic Ampang. What can I do for you?",
-		"Hello! Welcome to Primer Cherang Clinic Ampang's virtual assistant. How may I help you?",
-		"Welcome! I'm your virtual healthcare assistant at Primer Cherang Clinic Ampang. What brings you here today?",
+		"Welcome to Sunrise Medical Center's virtual assistant! How can I help you today?",
+		"Hi there! I'm here to assist you with your medical needs at Sunrise Medical Center. What can I do for you?",
+		"Hello! Welcome to Sunrise Medical Center's virtual assistant. How may I help you?",
+		"Welcome! I'm your virtual healthcare assistant at Sunrise Medical Center. What brings you here today?",
 	],
 	booking: [
 		"I'll help you book an appointment. First, please select a service category:",
@@ -179,9 +179,9 @@ const responseVariations = {
 		"Sure, I'll assist you with booking. Please choose a service category:",
 	],
 	location: [
-		'Our clinic is located at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang, Wilayah Persekutuan Kuala Lumpur. Need directions?',
-		"You can find us at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang. We're in the Desa Pahlawan area.",
-		"We're conveniently located at Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000 Ampang, with parking available.",
+		'Our clinic is located at 123 Health Street, Medical District, 50000 Kuala Lumpur, Malaysia. Need directions?',
+		"You can find us at 123 Health Street, Medical District, 50000 Kuala Lumpur. We're in the Medical District area.",
+		"We're conveniently located at 123 Health Street, Medical District, 50000 Kuala Lumpur, with parking available.",
 	],
 	managing: [
 		'Would you like to reschedule or cancel an appointment?',
@@ -190,18 +190,18 @@ const responseVariations = {
 		'How can I help with your appointment - reschedule or cancel?',
 	],
 	greeting: [
-		'Hello! How can I assist you with your visit to Primer Cherang Clinic Ampang today?',
-		"Hi there! I'm here to help you with appointments at Primer Cherang Clinic Ampang.",
-		'Welcome to Primer Cherang Clinic Ampang! Would you like to book an appointment or manage an existing one?',
+		'Hello! How can I assist you with your visit to Sunrise Medical Center today?',
+		"Hi there! I'm here to help you with appointments at Sunrise Medical Center.",
+		'Welcome to Sunrise Medical Center! Would you like to book an appointment or manage an existing one?',
 	],
 	help: [
-		'I can help you with:\n• Booking appointments at Primer Cherang Clinic Ampang\n• Managing your existing appointments\n• Finding our clinic location\n• Contacting us\n\nWhat would you like to do?',
+		'I can help you with:\n• Booking appointments at Sunrise Medical Center\n• Managing your existing appointments\n• Finding our clinic location\n• Contacting us\n\nWhat would you like to do?',
 		"Here's what I can assist you with:\n1. Schedule appointments with our doctors\n2. Reschedule/cancel existing appointments\n3. Get clinic location and directions\n4. Contact information\n\nHow may I help you?",
 	],
 	contact: [
-		'You can reach us at 018-786 9727 during our operating hours.',
-		'Feel free to call us at 018-786 9727 for any immediate inquiries.',
-		'Our clinic contact number is 018-786 9727. How can we assist you?',
+		'You can reach us at 012-345 6789 during our operating hours.',
+		'Feel free to call us at 012-345 6789 for any immediate inquiries.',
+		'Our clinic contact number is 012-345 6789. How can we assist you?',
 	],
 };
 
@@ -1444,7 +1444,7 @@ const Chatbot = () => {
 							setResponses((prev) => [
 								...prev,
 								{
-									text: 'You are not logged in, kindly log in or create an account with your email address you have used before.\n\nOr you may contact our support at 018-7869727 for appointments rescheduling or cancellation',
+									text: 'You are not logged in, kindly log in or create an account with your email address you have used before.\n\nOr you may contact our support at 012-3456789 for appointments rescheduling or cancellation',
 									sender: 'ai',
 								},
 							]);

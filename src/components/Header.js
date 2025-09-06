@@ -98,7 +98,7 @@ const Header = () => {
 								transition: 'opacity 0.2s ease-in-out',
 							}}
 						>
-							Primer Cherang Clinic
+							Sunrise Medical Center
 						</Typography>
 
 						<Box sx={{ display: { xs: 'none', md: 'block' } }}>

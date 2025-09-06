@@ -123,7 +123,7 @@ function Homepage() {
 								mt: 2,
 							}}
 						>
-							Primer Cherang Clinic
+							Sunrise Medical Center
 						</Box>
 					</Typography>
 					<Typography
@@ -286,10 +286,10 @@ function Homepage() {
 								mb: 3,
 							}}
 						>
-							Welcome to Primer Clinic! Our mission is to provide compassionate
-							and high-quality healthcare to our community. We believe in
-							treating our patients with respect and dignity, ensuring that they
-							receive the best possible care.
+							Welcome to Sunrise Medical Center! Our mission is to provide
+							compassionate and high-quality healthcare to our community. We
+							believe in treating our patients with respect and dignity,
+							ensuring that they receive the best possible care.
 						</Typography>
 						<Typography
 							variant="body1"
@@ -592,8 +592,8 @@ function Homepage() {
 										lineHeight: 1.8,
 									}}
 								>
-									Plot 3A-1, Lot 4868, Jalan Mengkudu, Desa Pahlawan, 55000
-									Ampang, Wilayah Persekutuan Kuala Lumpur.
+									123 Health Street, Medical District, 50000 Kuala Lumpur,
+									Malaysia.
 								</Typography>
 							</Paper>
 						</Grid>
@@ -632,7 +632,7 @@ function Homepage() {
 										lineHeight: 1.8,
 									}}
 								>
-									+60 18-786 9727
+									+60 12-345 6789
 								</Typography>
 							</Paper>
 						</Grid>
@@ -671,9 +671,9 @@ function Homepage() {
 										lineHeight: 1.8,
 									}}
 								>
-									info@primercherang.com
+									info@sunrisemedical.com
 									<br />
-									support@primercherang.com
+									support@sunrisemedical.com
 								</Typography>
 							</Paper>
 						</Grid>
