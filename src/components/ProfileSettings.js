@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 import config from '../config';
+import { DEMO_CONFIG } from '../config/demo';
 
 function ProfileSettings() {
 	const [userData, setUserData] = useState({
@@ -64,6 +65,15 @@ function ProfileSettings() {
 
 	const [phoneError, setPhoneError] = useState('');
 
+	// Check if user is using demo credentials
+	const isDemoUser = () => {
+		if (!DEMO_CONFIG.ENABLE_DEMO_MODE) return false;
+		const user = JSON.parse(localStorage.getItem('user'));
+		return DEMO_CONFIG.DEMO_CREDENTIALS.some(
+			(cred) => cred.email === user?.email
+		);
+	};
+
 	const fetchUserData = useCallback(async () => {
 		try {
 			const response = await fetch(`${config.apiUrl}/api/auth/user-details`, {
@@ -98,6 +108,15 @@ function ProfileSettings() {
 
 	const handleProfileUpdate = async (e) => {
 		e.preventDefault();
+
+		// Prevent updates in demo mode
+		if (isDemoUser()) {
+			showMessage(
+				'Profile editing is disabled in demo mode. Please use a real account to edit your profile.',
+				'warning'
+			);
+			return;
+		}
 
 		// Remove spaces from phone number before validation and submission
 		const cleanPhone = userData.phone.replace(/\s+/g, '');
@@ -192,6 +211,16 @@ function ProfileSettings() {
 
 	const handlePasswordChange = async (e) => {
 		e.preventDefault();
+
+		// Prevent password changes in demo mode
+		if (isDemoUser()) {
+			showMessage(
+				'Password changes are disabled in demo mode. Please use a real account to change your password.',
+				'warning'
+			);
+			return;
+		}
+
 		setPasswordErrors({
 			currentPassword: '',
 			newPassword: '',
@@ -278,6 +307,17 @@ function ProfileSettings() {
 				Profile Settings
 			</Typography>
 
+			{/* Demo Mode Warning */}
+			{isDemoUser() && (
+				<Alert severity="warning" sx={{ mb: 3 }}>
+					<Typography variant="body2" sx={{ fontWeight: 600 }}>
+						🚫 Demo Mode Active - Profile editing is disabled. This is a
+						demonstration account. Please use a real account to edit your
+						profile.
+					</Typography>
+				</Alert>
+			)}
+
 			<Paper sx={{ p: 3, mb: 3 }}>
 				<Typography variant="h6" gutterBottom>
 					Personal Information
@@ -292,7 +332,7 @@ function ProfileSettings() {
 								onChange={(e) =>
 									setUserData({ ...userData, name: e.target.value })
 								}
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 							/>
 						</Grid>
 						<Grid item xs={12}>
@@ -312,7 +352,7 @@ function ProfileSettings() {
 								onChange={handlePhoneChange}
 								error={!!phoneError}
 								helperText={phoneError}
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 								required
 								placeholder="+60123456789"
 							/>
@@ -325,7 +365,7 @@ function ProfileSettings() {
 								onChange={(e) =>
 									setUserData({ ...userData, address: e.target.value })
 								}
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 							/>
 						</Grid>
 						<Grid item xs={12} sm={6}>
@@ -343,7 +383,7 @@ function ProfileSettings() {
 									),
 								}}
 								placeholder="Optional"
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 							/>
 						</Grid>
 						<Grid item xs={12} sm={6}>
@@ -361,12 +401,18 @@ function ProfileSettings() {
 									),
 								}}
 								placeholder="Optional"
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 							/>
 						</Grid>
 						<Grid item xs={12}>
-							<Button type="submit" variant="contained" disabled={loading}>
-								Update Profile
+							<Button
+								type="submit"
+								variant="contained"
+								disabled={loading || isDemoUser()}
+							>
+								{isDemoUser()
+									? 'Demo Mode - Editing Disabled'
+									: 'Update Profile'}
 							</Button>
 						</Grid>
 					</Grid>
@@ -398,7 +444,7 @@ function ProfileSettings() {
 								}}
 								error={!!passwordErrors.currentPassword}
 								helperText={passwordErrors.currentPassword}
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 								InputProps={{
 									endAdornment: (
 										<InputAdornment position="end">
@@ -444,7 +490,7 @@ function ProfileSettings() {
 								}}
 								error={!!passwordErrors.newPassword}
 								helperText={passwordErrors.newPassword}
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 								InputProps={{
 									endAdornment: (
 										<InputAdornment position="end">
@@ -532,7 +578,7 @@ function ProfileSettings() {
 								}}
 								error={!!passwordErrors.confirmPassword}
 								helperText={passwordErrors.confirmPassword}
-								disabled={loading}
+								disabled={loading || isDemoUser()}
 								InputProps={{
 									endAdornment: (
 										<InputAdornment position="end">
@@ -562,10 +608,14 @@ function ProfileSettings() {
 								type="submit"
 								variant="contained"
 								disabled={
-									loading || !Object.values(passwordValidation).every(Boolean)
+									loading ||
+									isDemoUser() ||
+									!Object.values(passwordValidation).every(Boolean)
 								}
 							>
-								Change Password
+								{isDemoUser()
+									? 'Demo Mode - Password Change Disabled'
+									: 'Change Password'}
 							</Button>
 						</Grid>
 					</Grid>

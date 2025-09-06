@@ -30,6 +30,7 @@ import { addDays, set, format, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
 import config from '../config';
+import { DEMO_CONFIG } from '../config/demo';
 import { Link, useNavigate } from 'react-router-dom';
 
 function BookingModal({ open, onClose, initialCategory, initialService }) {
@@ -71,6 +72,15 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		height: '',
 	});
 	const navigate = useNavigate();
+
+	// Check if user is using demo credentials
+	const isDemoUser = () => {
+		if (!DEMO_CONFIG.ENABLE_DEMO_MODE) return false;
+		const user = JSON.parse(localStorage.getItem('user'));
+		return DEMO_CONFIG.DEMO_CREDENTIALS.some(
+			(cred) => cred.email === user?.email
+		);
+	};
 
 	useEffect(() => {
 		const fetchUserDetails = async () => {
@@ -301,9 +311,9 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			// Combine preference message with notes
 			const notesWithPreference = `${preferenceMessage}\n\n${formData.notes}`;
 
-			// First, update the user's phone number if they're logged in
+			// First, update the user's phone number if they're logged in (but not in demo mode)
 			const token = localStorage.getItem('token');
-			if (token) {
+			if (token && !isDemoUser()) {
 				const updateResponse = await fetch(
 					`${config.apiUrl}/api/auth/update-user`,
 					{
