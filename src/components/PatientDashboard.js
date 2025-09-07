@@ -30,6 +30,10 @@ import {
 import { format } from 'date-fns';
 import NotesHistory from './NotesHistory';
 import { enhancedTableStyles } from './styles/tableStyles';
+import {
+	formatAppointmentDateTime,
+	parseAppointmentTime,
+} from '../utils/dateUtils';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
@@ -344,11 +348,11 @@ function Dashboard() {
 	const today = new Date();
 
 	const upcomingAppointments = patientAppointments.filter(
-		(appointment) => new Date(appointment.appointmentTime) >= today
+		(appointment) => parseAppointmentTime(appointment.appointmentTime) >= today
 	);
 
 	const pastAppointments = patientAppointments.filter(
-		(appointment) => new Date(appointment.appointmentTime) < today
+		(appointment) => parseAppointmentTime(appointment.appointmentTime) < today
 	);
 
 	const statusOptions = [
@@ -376,13 +380,17 @@ function Dashboard() {
 		switch (timeFilter) {
 			case 'today':
 				return appointments.filter((appointment) => {
-					const appointmentDate = new Date(appointment.appointmentTime);
+					const appointmentDate = parseAppointmentTime(
+						appointment.appointmentTime
+					);
 					appointmentDate.setHours(0, 0, 0, 0);
 					return appointmentDate.getTime() === today.getTime();
 				});
 			case 'tomorrow':
 				return appointments.filter((appointment) => {
-					const appointmentDate = new Date(appointment.appointmentTime);
+					const appointmentDate = parseAppointmentTime(
+						appointment.appointmentTime
+					);
 					appointmentDate.setHours(0, 0, 0, 0);
 					return appointmentDate.getTime() === tomorrow.getTime();
 				});
@@ -397,7 +405,9 @@ function Dashboard() {
 		return [...appointments].sort((a, b) => {
 			let result;
 			if (sortBy === 'appointmentTime') {
-				result = new Date(a.appointmentTime) - new Date(b.appointmentTime);
+				result =
+					parseAppointmentTime(a.appointmentTime) -
+					parseAppointmentTime(b.appointmentTime);
 			} else if (sortBy === 'treatment') {
 				result = (a.treatment?.name || '').localeCompare(
 					b.treatment?.name || ''
@@ -816,9 +826,15 @@ function Dashboard() {
 										{appointment.treatment?.name || 'N/A'}
 									</TableCell>
 									<TableCell align="center">
-										{format(new Date(appointment.appointmentTime), 'PP')}
+										{
+											formatAppointmentDateTime(appointment.appointmentTime)
+												.date
+										}
 										<br />
-										{format(new Date(appointment.appointmentTime), 'p')}
+										{
+											formatAppointmentDateTime(appointment.appointmentTime)
+												.time
+										}
 									</TableCell>
 									<TableCell align="center">
 										<Chip
@@ -1003,9 +1019,15 @@ function Dashboard() {
 										{appointment.treatment?.name || 'N/A'}
 									</TableCell>
 									<TableCell align="center">
-										{format(new Date(appointment.appointmentTime), 'PP')}
+										{
+											formatAppointmentDateTime(appointment.appointmentTime)
+												.date
+										}
 										<br />
-										{format(new Date(appointment.appointmentTime), 'p')}
+										{
+											formatAppointmentDateTime(appointment.appointmentTime)
+												.time
+										}
 									</TableCell>
 									<TableCell align="center">
 										<Chip

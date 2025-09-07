@@ -39,6 +39,10 @@ import { format } from 'date-fns';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { canCancelAppointments } from '../utils/roleUtils';
+import {
+	formatAppointmentDateTime,
+	parseAppointmentTime,
+} from '../utils/dateUtils';
 import { enhancedTableStyles } from './styles/tableStyles';
 import NotesHistory from './NotesHistory';
 import { mobileResponsiveStyles } from './styles/mobileStyles';
@@ -348,7 +352,7 @@ function AppointmentManagement({ appointments, onRefresh }) {
 		const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
 
 		// Add day filtering
-		const appointmentDate = new Date(apt.appointmentTime);
+		const appointmentDate = parseAppointmentTime(apt.appointmentTime);
 		appointmentDate.setHours(0, 0, 0, 0);
 
 		const today = new Date();
@@ -479,7 +483,9 @@ function AppointmentManagement({ appointments, onRefresh }) {
 	// Sorting function for different data types
 	const compareValues = (a, b, property) => {
 		if (property === 'appointmentTime') {
-			return new Date(a[property]) - new Date(b[property]);
+			return (
+				parseAppointmentTime(a[property]) - parseAppointmentTime(b[property])
+			);
 		}
 		if (typeof a[property] === 'string') {
 			return a[property].localeCompare(b[property]);
@@ -946,9 +952,15 @@ function AppointmentManagement({ appointments, onRefresh }) {
 											alignItems: 'center',
 										}}
 									>
-										{format(new Date(appointment.appointmentTime), 'PP')}
+										{
+											formatAppointmentDateTime(appointment.appointmentTime)
+												.date
+										}
 										<br />
-										{format(new Date(appointment.appointmentTime), 'p')}
+										{
+											formatAppointmentDateTime(appointment.appointmentTime)
+												.time
+										}
 									</TableCell>
 
 									<TableCell
