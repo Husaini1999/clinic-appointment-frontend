@@ -1,7 +1,7 @@
 // Demo Mode Configuration
 export const DEMO_CONFIG = {
 	// Set this to true to enable demo mode
-	ENABLE_DEMO_MODE: true,
+	ENABLE_DEMO_MODE: false,
 
 	// Demo credentials
 	DEMO_CREDENTIALS: [
