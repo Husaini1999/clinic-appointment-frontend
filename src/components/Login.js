@@ -329,7 +329,8 @@ function Login() {
 					padding: 4,
 					width: '100%',
 					maxWidth: 500,
-					...(formData.email &&
+					...(DEMO_CONFIG.ENABLE_DEMO_MODE &&
+						formData.email &&
 						formData.password && {
 							border: '2px solid #4caf50',
 							boxShadow: '0 4px 20px rgba(76, 175, 80, 0.2)',
