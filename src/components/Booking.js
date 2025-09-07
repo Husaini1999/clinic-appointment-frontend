@@ -32,6 +32,13 @@ import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is
 import config from '../config';
 import { DEMO_CONFIG } from '../config/demo';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+	isWeekday,
+	isWithinBusinessHours,
+	isValidAppointmentTime,
+	getTimeSlots,
+	toAppointmentISOString,
+} from '../utils/dateUtils';
 
 function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const theme = useTheme();
@@ -226,62 +233,6 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 		setError('');
 	};
 
-	const isWeekday = (date) => {
-		if (!date) return false;
-		const day = date.getDay();
-		return day !== 0 && day !== 6;
-	};
-
-	const isWithinBusinessHours = (date) => {
-		if (!date) return false;
-		// Convert to UTC+8 for business hours check
-		const utc8Hours = date.getUTCHours() + 8;
-		const minutes = date.getMinutes();
-		return (
-			utc8Hours >= 9 && (utc8Hours < 17 || (utc8Hours === 17 && minutes === 0))
-		);
-	};
-
-	const isValidAppointmentTime = (date) => {
-		if (!date) return false;
-
-		const now = new Date();
-		const selectedDateTime = new Date(date);
-
-		// If it's a future date (not today), only check business hours and weekday
-		if (selectedDateTime.toDateString() !== now.toDateString()) {
-			return isWeekday(date) && isWithinBusinessHours(date);
-		}
-
-		// If it's today, check if the time has passed
-		if (isBefore(selectedDateTime, now)) {
-			return false;
-		}
-
-		// Check if it's a weekday and within business hours
-		return isWeekday(date) && isWithinBusinessHours(date);
-	};
-
-	const getTimeSlots = () => {
-		const slots = [];
-		const startHour = 9;
-		const endHour = 17;
-		const interval = 30;
-
-		for (let hour = startHour; hour <= endHour; hour++) {
-			for (let minute = 0; minute < 60; minute += interval) {
-				if (hour === endHour && minute > 0) break;
-
-				// Create a date object for the slot
-				const slotDate = new Date();
-				// Convert to UTC+8
-				slotDate.setUTCHours(hour - 8, minute, 0, 0);
-				slots.push(format(slotDate, 'h:mm a'));
-			}
-		}
-		return slots;
-	};
-
 	const handleSubmit = async () => {
 		if (
 			!formData.appointmentTime ||
@@ -341,9 +292,7 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				...formData,
 				status: 'confirmed',
 				doctorPreference,
-				appointmentTime: new Date(
-					formData.appointmentTime.getTime() - 8 * 60 * 60 * 1000
-				).toISOString(),
+				appointmentTime: toAppointmentISOString(formData.appointmentTime),
 				phone: cleanPhone,
 				notes: notesWithPreference,
 			};

@@ -22,6 +22,12 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import Fuse from 'fuse.js';
 import axios from 'axios';
+import {
+	isWeekday,
+	isWithinBusinessHours,
+	isValidAppointmentTime,
+	toAppointmentISOString,
+} from '../utils/dateUtils';
 
 const parseTimeSlot = (timeString) => {
 	const [time, period] = timeString.split(' ');
@@ -2086,7 +2092,7 @@ const Chatbot = () => {
 				phone: userData.phone,
 				address: userData.address,
 				treatment: flowData.selectedService,
-				appointmentTime: appointmentDateTime.toISOString(), // Send directly in local time
+				appointmentTime: toAppointmentISOString(appointmentDateTime), // Send directly in local time
 				status: 'confirmed', // Change default status to confirmed
 				notes: [],
 			};
