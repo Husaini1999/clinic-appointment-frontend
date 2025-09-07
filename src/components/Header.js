@@ -85,7 +85,7 @@ const Header = () => {
 								cursor: 'pointer',
 								color: 'primary.main',
 								fontWeight: 700,
-								fontSize: { xs: '1.2rem', sm: '1.5rem' },
+								fontSize: { xs: '1.1rem', sm: '1.5rem' },
 								letterSpacing: '-0.5px',
 								position: { xs: 'absolute', md: 'static' },
 								left: '50%',
@@ -93,6 +93,8 @@ const Header = () => {
 								display: 'flex',
 								alignItems: 'center',
 								gap: 2,
+								whiteSpace: 'nowrap',
+								textAlign: 'center',
 								'&:hover': {
 									opacity: 0.8,
 								},

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
 	Box,
 	Container,
@@ -18,7 +18,6 @@ import {
 	Card,
 	CardContent,
 	Chip,
-	Divider,
 } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
@@ -43,6 +42,7 @@ function Login() {
 	const location = useLocation();
 	const searchParams = new URLSearchParams(location.search);
 	const expired = searchParams.get('expired');
+	const loginFormRef = useRef(null);
 
 	const showMessage = (message, severity = 'success') => {
 		if (severity === 'error') {
@@ -133,6 +133,16 @@ function Login() {
 			'Demo credentials filled! Now click "Sign In" to start exploring.',
 			'success'
 		);
+
+		// Scroll to login form after a short delay to allow state update
+		setTimeout(() => {
+			if (loginFormRef.current) {
+				loginFormRef.current.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center',
+				});
+			}
+		}, 100);
 	};
 
 	const handleCopyToClipboard = (text) => {
@@ -324,6 +334,7 @@ function Login() {
 
 			{/* Login Form */}
 			<Paper
+				ref={loginFormRef}
 				elevation={3}
 				sx={{
 					padding: 4,
