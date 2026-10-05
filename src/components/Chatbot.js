@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
 	Box,
 	Button,
@@ -82,6 +83,32 @@ const parseManagementIntent = (text) => {
 		return 'Cancel';
 	}
 	return null;
+};
+
+const PROFILE_FIELD_LABELS = {
+	name: 'Name',
+	email: 'Email',
+	phone: 'Phone number',
+	address: 'Address',
+};
+
+const getMissingProfileFields = (userData) =>
+	['name', 'email', 'phone', 'address'].filter(
+		(field) => !userData?.[field]?.toString().trim()
+	);
+
+const formatProfileValue = (value) => value?.toString().trim() || 'Not set';
+
+const formatMissingProfileMessage = (fields) => {
+	const list = fields
+		.map((field) => `• ${PROFILE_FIELD_LABELS[field]}`)
+		.join('\n');
+
+	return (
+		'Please update your profile. Some details are missing:\n\n' +
+		`${list}\n\n` +
+		'Open Profile Settings, fill those in, then come back to book your appointment.'
+	);
 };
 
 const getAppointmentDescription = (appointment) => {
@@ -221,6 +248,7 @@ const SUGGESTION_LIST =
 	'• Help / FAQ';
 
 const Chatbot = () => {
+	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
 	const [userInput, setUserInput] = useState('');
 	const [responses, setResponses] = useState([]);
@@ -517,7 +545,21 @@ const Chatbot = () => {
 						))}
 					</Box>
 				);
-			case 'userConfirmation':
+			case 'userConfirmation': {
+				const missingProfileFields = response.data?.missingFields || [];
+
+				if (missingProfileFields.length > 0) {
+					return (
+						<Button
+							variant="contained"
+							onClick={() => onAction('goToProfile')}
+							color="primary"
+						>
+							Go to Profile Settings
+						</Button>
+					);
+				}
+
 				return (
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 						<Typography
@@ -542,6 +584,17 @@ const Chatbot = () => {
 							Confirm and Continue
 						</Button>
 					</Box>
+				);
+			}
+			case 'profileUpdate':
+				return (
+					<Button
+						variant="contained"
+						onClick={() => onAction('goToProfile')}
+						color="primary"
+					>
+						Go to Profile Settings
+					</Button>
 				);
 			case 'dateTimeSelection':
 				return (
@@ -892,6 +945,11 @@ const Chatbot = () => {
 		}
 
 		switch (action) {
+			case 'goToProfile':
+				setOpen(false);
+				navigate('/profile');
+				break;
+
 			case 'booking':
 				try {
 					// Set the guided flow
@@ -1133,6 +1191,7 @@ const Chatbot = () => {
 
 							if (response.ok) {
 								const userData = await response.json();
+								const missingFields = getMissingProfileFields(userData);
 								// Store user data in flowData
 								setFlowData((prev) => ({
 									...prev,
@@ -1154,17 +1213,19 @@ const Chatbot = () => {
 										sender: 'user',
 									},
 									{
-										text: [
-											'Please confirm if these details are correct:',
-											'',
-											`Name:  ${userData.name}`,
-											`Email:  ${userData.email}`,
-											`Phone:  ${userData.phone}`,
-											`Address: ${userData.address}`,
-										].join('\n'),
+										text: missingFields.length
+											? formatMissingProfileMessage(missingFields)
+											: [
+													'Please confirm if these details are correct:',
+													'',
+													`Name:  ${formatProfileValue(userData.name)}`,
+													`Email:  ${formatProfileValue(userData.email)}`,
+													`Phone:  ${formatProfileValue(userData.phone)}`,
+													`Address: ${formatProfileValue(userData.address)}`,
+											  ].join('\n'),
 										sender: 'ai',
 										type: 'userConfirmation',
-										data: userData,
+										data: { ...userData, missingFields },
 									},
 								]);
 							} else {
@@ -1687,7 +1748,20 @@ const Chatbot = () => {
 				}
 				break;
 
-			case 'userDetailsConfirm':
+			case 'userDetailsConfirm': {
+				const missingOnConfirm = getMissingProfileFields(flowData.userData);
+				if (missingOnConfirm.length > 0) {
+					setResponses((prev) => [
+						...prev,
+						{
+							text: formatMissingProfileMessage(missingOnConfirm),
+							sender: 'ai',
+							type: 'profileUpdate',
+						},
+					]);
+					break;
+				}
+
 				// Details confirmed, proceed to doctor preference
 				setResponses((prev) => [
 					...prev,
@@ -1703,6 +1777,7 @@ const Chatbot = () => {
 					},
 				]);
 				break;
+			}
 
 			case 'updateUserField':
 				const updatedUserData = {
@@ -1832,7 +1907,7 @@ const Chatbot = () => {
 					...prev,
 					{ text: data.label, sender: 'user' },
 					{
-						text: 'Would you like to provide any additional information or specific concerns? (Optional)\nType your message or click Send to skip.',
+						text: 'Would you like to provide any additional information or specific concerns? (Optional)\nType your message or click Skip to leave this blank.',
 						sender: 'ai',
 					},
 				]);
@@ -1887,12 +1962,11 @@ const Chatbot = () => {
 					},
 				]);
 
-				// Proceed with booking
-				handleFinalBooking({
+				// Proceed with booking. Empty notes are allowed.
+				await handleFinalBooking({
 					...flowData.userData,
 					notes: notesText,
 				});
-				setCurrentInputType(null);
 				break;
 
 			case 'cancellationReason':
@@ -2036,6 +2110,48 @@ const Chatbot = () => {
 
 	const handleFinalBooking = async (userData) => {
 		try {
+			const missingDetail = ['name', 'email', 'phone', 'address'].find(
+				(field) => !userData?.[field]?.toString().trim()
+			);
+
+			if (missingDetail) {
+				const isLoggedIn = !!localStorage.getItem('token');
+				const missingFields = getMissingProfileFields(userData);
+
+				if (isLoggedIn) {
+					setCurrentInputType(null);
+					setResponses((prev) => [
+						...prev,
+						{
+							text: formatMissingProfileMessage(missingFields),
+							sender: 'ai',
+							type: 'profileUpdate',
+						},
+					]);
+					return;
+				}
+
+				const detailLabel =
+					missingDetail === 'phone' ? 'phone number' : missingDetail;
+				const prompts = {
+					name: 'Please tell me your full name:',
+					email: 'Please enter your email address:',
+					phone: 'Please enter your phone number (+601X-XXXXXXX):',
+					address: 'Please enter your complete address:',
+				};
+
+				setFlowData((prev) => ({ ...prev, resumeBooking: true }));
+				setCurrentInputType(missingDetail);
+				setResponses((prev) => [
+					...prev,
+					{
+						text: `Additional notes are optional, so that part was skipped. I still need your ${detailLabel} before the booking can be saved.\n\n${prompts[missingDetail]}`,
+						sender: 'ai',
+					},
+				]);
+				return;
+			}
+
 			// Validate that we have a selected service
 			if (!flowData.selectedService) {
 				throw new Error('No treatment service selected');
@@ -2089,6 +2205,16 @@ const Chatbot = () => {
 				);
 			}
 
+			const preferenceNotes = [];
+			if (userData.doctorPreference === 'male') {
+				preferenceNotes.push('Male doctor preferred');
+			} else if (userData.doctorPreference === 'female') {
+				preferenceNotes.push('Female doctor preferred');
+			}
+			if (userData.notes?.trim()) {
+				preferenceNotes.push(userData.notes.trim());
+			}
+
 			// Create the appointment data object with validated service
 			const appointmentData = {
 				name: userData.name,
@@ -2098,27 +2224,9 @@ const Chatbot = () => {
 				treatment: flowData.selectedService,
 				appointmentTime: toAppointmentISOString(appointmentDateTime), // Send directly in local time
 				status: 'confirmed', // Change default status to confirmed
-				notes: [],
+				doctorPreference: userData.doctorPreference || 'any',
+				notes: preferenceNotes.join('\n\n'),
 			};
-
-			// Add notes to noteHistory if they exist
-			if (userData.notes || userData.doctorPreference) {
-				const notes = [];
-				if (userData.doctorPreference) {
-					switch (userData.doctorPreference) {
-						case 'male':
-							notes.push('Male doctor preferred');
-							break;
-						case 'female':
-							notes.push('Female doctor preferred');
-							break;
-					}
-				}
-				if (userData.notes) {
-					notes.push(userData.notes);
-				}
-				appointmentData.notes = notes.join('\n\n');
-			}
 
 			// Make the API call
 			const response = await fetch(`${config.apiUrl}/api/appointments/create`, {
@@ -2160,6 +2268,7 @@ const Chatbot = () => {
 			setCurrentInputType(null);
 		} catch (error) {
 			console.error('Booking error:', error);
+			setCurrentInputType(null);
 			setResponses((prev) => [
 				...prev,
 				{
@@ -2322,6 +2431,10 @@ const Chatbot = () => {
 						}
 
 						// Update flowData with formatted phone
+						const userWithPhone = {
+							...flowData.userData,
+							phone: formatted,
+						};
 						setFlowData((prev) => ({
 							...prev,
 							userData: {
@@ -2329,6 +2442,17 @@ const Chatbot = () => {
 								phone: formatted,
 							},
 						}));
+
+						if (flowData.resumeBooking && userWithPhone.address?.toString().trim()) {
+							setResponses((prev) => [
+								...prev,
+								{ text: formatted, sender: 'user' },
+							]);
+							setFlowData((prev) => ({ ...prev, resumeBooking: false }));
+							await handleFinalBooking(userWithPhone);
+							setIsProcessing(false);
+							break;
+						}
 
 						// If not logged in or no address found, ask for address
 						setResponses((prev) => [
@@ -2360,6 +2484,11 @@ const Chatbot = () => {
 							return;
 						}
 
+						const userWithAddress = {
+							...flowData.userData,
+							address: userInputText.trim(),
+						};
+
 						// Update flowData with address
 						setFlowData((prev) => ({
 							...prev,
@@ -2367,7 +2496,18 @@ const Chatbot = () => {
 								...prev.userData,
 								address: userInputText.trim(),
 							},
+							resumeBooking: false,
 						}));
+
+						if (flowData.resumeBooking) {
+							setResponses((prev) => [
+								...prev,
+								{ text: userInputText, sender: 'user' },
+							]);
+							await handleFinalBooking(userWithAddress);
+							setIsProcessing(false);
+							break;
+						}
 
 						setResponses((prev) => [
 							...prev,
@@ -2405,13 +2545,12 @@ const Chatbot = () => {
 							},
 						]);
 
-						// Proceed with booking
-						handleFinalBooking({
+						// Proceed with booking. Empty notes are allowed.
+						await handleFinalBooking({
 							...flowData.userData,
 							notes: userInputText || '',
 						});
-						setCurrentInputType(null);
-						setIsProcessing(false); // Reset after processing
+						setIsProcessing(false);
 						break;
 
 					case 'management':
