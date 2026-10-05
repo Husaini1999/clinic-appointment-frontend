@@ -338,7 +338,6 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 					setPhoneError('');
 					setSelectedService(null);
 					setSelectedCategory('');
-					setBookedSlots([]);
 
 					// Navigate to dashboard if user is logged in
 					if (localStorage.getItem('token')) {
