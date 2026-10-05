@@ -211,9 +211,14 @@ const responseVariations = {
 	],
 };
 
-const HUGGING_FACE_API_URL =
-	'https://api-inference.huggingface.co/models/facebook/bart-large-mnli';
-const HUGGING_FACE_TOKEN = process.env.REACT_APP_HUGGING_FACE_TOKEN; // Add this to your .env file
+const SUGGESTION_LIST =
+	"Sorry, I didn't get that. You may check out the list below:\n\n" +
+	'• Book an appointment\n' +
+	'• Manage your appointments\n' +
+	'• Find our clinic location\n' +
+	'• Contact us\n' +
+	'• View our services\n' +
+	'• Help / FAQ';
 
 const Chatbot = () => {
 	const [open, setOpen] = useState(false);
@@ -234,7 +239,6 @@ const Chatbot = () => {
 		timeOfDay: new Date().getHours(),
 	});
 	const [isProcessing, setIsProcessing] = useState(false);
-	const [confidence, setConfidence] = useState(1);
 	// Add this state for input validation
 	const [isInputValid, setIsInputValid] = useState(true);
 	const [inputHelperText, setInputHelperText] = useState('');
@@ -2560,24 +2564,12 @@ const Chatbot = () => {
 					return;
 				}
 
-				// Detect intent with NLP
-				const detectedIntent = await detectIntent(userInputText);
+				const detectedIntent = detectIntent(userInputText);
 
-				// Get response based on confidence
 				const getContextAwareResponse = (intent) => {
 					const responses = responseVariations[intent] || [];
-					const baseResponse =
-						responses[Math.floor(Math.random() * responses.length)];
-
-					// Add context-aware additions based on confidence
-					if (confidence < 0.5) {
-						return `I didn't quite catch that. Could you please rephrase your question so I can better assist you?`;
-					}
-					return baseResponse;
+					return responses[Math.floor(Math.random() * responses.length)];
 				};
-
-				console.log('Detected Intent:', detectedIntent);
-				console.log('Confidence Score:', confidence);
 				switch (detectedIntent) {
 					case 'booking':
 						// const bookingResponse = getContextAwareResponse('booking');
@@ -2635,6 +2627,14 @@ const Chatbot = () => {
 						]);
 						break; // Just use break instead of return
 
+					case 'contact':
+						const contactResponse = getContextAwareResponse('contact');
+						setResponses((prev) => [
+							...prev,
+							{ text: contactResponse, sender: 'ai' },
+						]);
+						break;
+
 					case 'services':
 						const services = await fetchServices();
 						const servicesList = services
@@ -2650,17 +2650,14 @@ const Chatbot = () => {
 						]);
 						break;
 
-					// Add a default case to handle low-confidence scenarios
 					default:
-						if (confidence < 0.5) {
-							setResponses((prev) => [
-								...prev,
-								{
-									text: "I'm not sure I understood that. Could you please rephrase?",
-									sender: 'ai',
-								},
-							]);
-						}
+						setResponses((prev) => [
+							...prev,
+							{
+								text: SUGGESTION_LIST,
+								sender: 'ai',
+							},
+						]);
 						break;
 				}
 				setUserInput('');
@@ -2674,86 +2671,47 @@ const Chatbot = () => {
 		setIsProcessing(false); // Ensure it's always reset at the end
 	};
 
-	// Modify detectIntent to use fuzzy matching
-	const detectIntent = async (text) => {
+	const detectIntent = (text) => {
 		const lowercaseText = text.toLowerCase().trim();
 
-		const directMatches = {
-			help: ['help', 'faq', 'what can you do', 'guide me'],
-			booking: ['book', 'appointment', 'schedule', 'book appointment'],
-			managing: ['manage', 'reschedule', 'cancel', 'change appointment'],
-			location: ['where', 'location', 'address', 'clinic location'],
-			contact: ['contact', 'phone', 'call', 'reach'],
-			services: ['services', 'treatments', 'available services'],
+		const keywordGroups = {
+			help: intentPatterns.help,
+			booking: [...intentPatterns.booking, 'book', 'appointment', 'schedule'],
+			managing: [
+				...intentPatterns.managing,
+				'manage',
+				'reschedule',
+				'cancel',
+			],
+			location: [...intentPatterns.location, 'where', 'location', 'address'],
+			contact: [...intentPatterns.contact, 'contact', 'phone', 'call', 'reach'],
+			services: [...intentPatterns.services, 'services', 'treatments'],
+			greeting: intentPatterns.greeting,
 		};
 
-		for (const [intent, patterns] of Object.entries(directMatches)) {
-			if (patterns.some((pattern) => lowercaseText.includes(pattern))) {
-				setConfidence(1.0); // Set high confidence for exact matches
+		const matchesPattern = (pattern) => {
+			if (pattern.length <= 3) {
+				const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+				return new RegExp(`\\b${escaped}\\b`, 'i').test(lowercaseText);
+			}
+			return lowercaseText.includes(pattern);
+		};
+
+		for (const intent of [
+			'help',
+			'booking',
+			'managing',
+			'location',
+			'contact',
+			'services',
+			'greeting',
+		]) {
+			if (keywordGroups[intent].some(matchesPattern)) {
 				return intent;
 			}
 		}
-		console.log(text);
-		// If no exact match, use Hugging Face API
-		return await processWithHuggingFace(text);
-	};
 
-	const processWithHuggingFace = async (text) => {
-		try {
-			console.log('📡 Sending request to Hugging Face API...');
-			console.log('Token available:', !!HUGGING_FACE_TOKEN);
-
-			if (!HUGGING_FACE_TOKEN) {
-				console.error('Hugging Face token is missing');
-				return null;
-			}
-
-			const response = await fetch(HUGGING_FACE_API_URL, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${HUGGING_FACE_TOKEN}`,
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					inputs: text,
-					parameters: {
-						candidate_labels: [
-							'greeting',
-							'help',
-							'booking appointment',
-							'managing appointment',
-							'asking location',
-							'contact information',
-						],
-					},
-				}),
-			});
-
-			const data = await response.json();
-			console.log('API Response:', data);
-
-			if (data && data.labels && data.labels.length > 0) {
-				const labelMapping = {
-					greeting: 'greeting',
-					help: 'help',
-					'booking appointment': 'booking',
-					'managing appointment': 'managing',
-					'asking location': 'location',
-					'contact information': 'contact',
-				};
-
-				setConfidence(data.scores[0]);
-				return labelMapping[data.labels[0]];
-			}
-			return null;
-		} catch (error) {
-			console.error('Hugging Face API error details:', {
-				message: error.message,
-				status: error.status,
-				statusText: error.statusText,
-			});
-			return null;
-		}
+		return null;
 	};
 
 	const fetchServices = async () => {
