@@ -29,9 +29,7 @@ import {
 	Snackbar,
 	Alert,
 } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import AppointmentSlotPicker from './AppointmentSlotPicker';
 import CancelIcon from '@mui/icons-material/Cancel';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -41,6 +39,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { canCancelAppointments } from '../utils/roleUtils';
 import {
 	formatAppointmentDateTime,
+	isValidAppointmentTime,
 	parseAppointmentTime,
 } from '../utils/dateUtils';
 import { enhancedTableStyles } from './styles/tableStyles';
@@ -105,38 +104,25 @@ const RescheduleModal = React.memo(
 		onNotesChange,
 		currentDateTime,
 	}) => (
-		<Dialog open={open} onClose={onClose}>
+		<Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
 			<DialogTitle>Reschedule Appointment</DialogTitle>
-			<DialogContent>
+			<DialogContent sx={{ pt: 2 }}>
 				<Typography variant="body2" sx={{ mb: 2 }}>
-					Please select a new date and time for this appointment.
+					Choose a new date, then a 30-minute time slot.
 				</Typography>
-				<LocalizationProvider dateAdapter={AdapterDateFns}>
-					<DateTimePicker
-						label="New Appointment Time"
-						value={notes.newDateTime || null}
-						onChange={(newValue) => {
-							onNotesChange({
-								target: {
-									value: {
-										...notes,
-										newDateTime: newValue,
-									},
+				<AppointmentSlotPicker
+					value={notes.newDateTime || null}
+					onChange={(newValue) => {
+						onNotesChange({
+							target: {
+								value: {
+									...notes,
+									newDateTime: newValue,
 								},
-							});
-						}}
-						minDate={new Date()}
-						shouldDisableDate={(date) => {
-							const day = date.getDay();
-							return day === 0 || day === 6;
-						}}
-						shouldDisableTime={(time, type) => {
-							const hours = time.getHours();
-							return hours < 9 || hours >= 17;
-						}}
-						sx={{ width: '100%', mt: 2 }}
-					/>
-				</LocalizationProvider>
+							},
+						});
+					}}
+				/>
 				<TextField
 					fullWidth
 					multiline
@@ -163,7 +149,12 @@ const RescheduleModal = React.memo(
 					onClick={() => onReschedule(appointmentId, 'reschedule')}
 					color="primary"
 					variant="contained"
-					disabled={!notes.reason?.trim() || !notes.newDateTime}
+					disabled={
+						!notes.reason?.trim() ||
+						!notes.newDateTime ||
+						!isValidAppointmentTime(new Date(notes.newDateTime)) ||
+						new Date(notes.newDateTime).getMinutes() % 30 !== 0
+					}
 				>
 					Reschedule
 				</Button>

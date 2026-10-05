@@ -23,22 +23,13 @@ import {
 	Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { addDays, set, format, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import { isValidPhoneNumber } from 'libphonenumber-js'; // Ensure this import is present
 import config from '../config';
 import { DEMO_CONFIG } from '../config/demo';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-	isWeekday,
-	isWithinBusinessHours,
-	isValidAppointmentTime,
-	getTimeSlots,
-	toAppointmentISOString,
-} from '../utils/dateUtils';
+import { isValidAppointmentTime, toAppointmentISOString } from '../utils/dateUtils';
+import AppointmentSlotPicker from './AppointmentSlotPicker';
 
 function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const theme = useTheme();
@@ -69,7 +60,6 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 	const [selectedCategory, setSelectedCategory] = useState(
 		initialCategory?._id || ''
 	);
-	const [bookedSlots, setBookedSlots] = useState([]);
 	const [preFilledData, setPreFilledData] = useState({
 		name: '',
 		email: '',
@@ -685,7 +675,6 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				);
 			case 2:
 				return (
-					<LocalizationProvider dateAdapter={AdapterDateFns}>
 						<Box sx={{ mt: 2 }}>
 							<Box
 								sx={{
@@ -719,157 +708,16 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 								</Typography>
 							</Box>
 
-							<DatePicker
-								label="Select Appointment Date"
+							<AppointmentSlotPicker
 								value={formData.appointmentTime}
-								onChange={(newValue) => {
-									// Reset the time when date changes by setting hours and minutes to 0
-									const newDate = newValue
-										? set(newValue, { hours: 0, minutes: 0, seconds: 0 })
-										: null;
+								onChange={(newValue) =>
 									setFormData({
 										...formData,
-										appointmentTime: newDate,
-									});
-								}}
-								shouldDisableDate={(date) => !isWeekday(date)}
-								minDate={new Date()}
-								maxDate={addDays(new Date(), 30)}
-								views={['year', 'month', 'day']}
-								slotProps={{
-									textField: {
-										fullWidth: true,
-										required: true,
-									},
-								}}
+										appointmentTime: newValue,
+									})
+								}
 							/>
-
-							<Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-								<Typography
-									variant="subtitle2"
-									color="text.secondary"
-									sx={{ width: '100%' }}
-								>
-									Available Time Slots:
-								</Typography>
-								{getTimeSlots().map((slot) => {
-									const isBooked = bookedSlots.includes(slot);
-									return (
-										<Button
-											key={slot}
-											size="small"
-											variant={
-												formData.appointmentTime &&
-												format(formData.appointmentTime, 'h:mm a') === slot
-													? 'contained'
-													: 'outlined'
-											}
-											color="primary"
-											onClick={() => {
-												if (formData.appointmentTime) {
-													const [time, period] = slot.split(' ');
-													const [hours, minutes] = time.split(':');
-													let hour = parseInt(hours);
-
-													if (period === 'PM' && hour !== 12) {
-														hour += 12;
-													} else if (period === 'AM' && hour === 12) {
-														hour = 0;
-													}
-
-													const newDate = set(formData.appointmentTime, {
-														hours: hour,
-														minutes: parseInt(minutes),
-													});
-
-													setFormData({
-														...formData,
-														appointmentTime: newDate,
-													});
-												}
-											}}
-											disabled={
-												!formData.appointmentTime ||
-												!isWeekday(formData.appointmentTime) ||
-												isBooked ||
-												(() => {
-													if (!formData.appointmentTime) return true;
-
-													const now = new Date();
-													const slotTime = new Date(formData.appointmentTime);
-													const [time, period] = slot.split(' ');
-													const [hours, minutes] = time.split(':');
-													let hour = parseInt(hours);
-
-													if (period === 'PM' && hour !== 12) {
-														hour += 12;
-													} else if (period === 'AM' && hour === 12) {
-														hour = 0;
-													}
-
-													slotTime.setHours(hour, parseInt(minutes), 0, 0);
-
-													if (slotTime.toDateString() !== now.toDateString()) {
-														return false;
-													}
-
-													return isBefore(slotTime, now);
-												})()
-											}
-											sx={{
-												minWidth: '90px',
-												width: '90px', // Fixed width
-												height: '60px', // Fixed height
-												fontSize: '0.875rem',
-												display: 'flex',
-												flexDirection: 'column',
-												justifyContent: 'center',
-												alignItems: 'center',
-												padding: '8px',
-												...(isBooked && {
-													bgcolor: 'grey.300',
-													color: 'grey.500',
-													borderColor: 'grey.400',
-													cursor: 'not-allowed',
-													'&:hover': {
-														bgcolor: 'grey.300',
-														borderColor: 'grey.400',
-													},
-													'&.Mui-disabled': {
-														bgcolor: 'grey.300',
-														color: 'grey.500',
-													},
-												}),
-											}}
-										>
-											<Box
-												sx={{
-													display: 'flex',
-													flexDirection: 'column',
-													alignItems: 'center',
-													width: '100%',
-													height: '100%',
-													justifyContent: 'center',
-												}}
-											>
-												{slot}
-												{isBooked && (
-													<Typography
-														variant="caption"
-														display="block"
-														color="error"
-														sx={{ mt: 0.5 }}
-													>
-														Booked
-													</Typography>
-												)}
-											</Box>
-										</Button>
-									);
-								})}
-							</Box>
 						</Box>
-					</LocalizationProvider>
 				);
 			case 3:
 				return (
@@ -936,7 +784,8 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 			case 2:
 				return (
 					formData.appointmentTime &&
-					isValidAppointmentTime(formData.appointmentTime)
+					isValidAppointmentTime(formData.appointmentTime) &&
+					new Date(formData.appointmentTime).getMinutes() % 30 === 0
 				);
 			case 3:
 				return true; // Notes are optional
@@ -944,26 +793,6 @@ function BookingModal({ open, onClose, initialCategory, initialService }) {
 				return false;
 		}
 	};
-
-	const fetchBookedSlots = async (date) => {
-		try {
-			const formattedDate = format(date, 'yyyy-MM-dd');
-			const response = await fetch(
-				`${config.apiUrl}/api/appointments/booked-slots?date=${formattedDate}`
-			);
-			const data = await response.json();
-			setBookedSlots(data.bookedSlots || []);
-		} catch (error) {
-			console.error('Error fetching booked slots:', error);
-			setBookedSlots([]);
-		}
-	};
-
-	useEffect(() => {
-		if (formData.appointmentTime) {
-			fetchBookedSlots(formData.appointmentTime);
-		}
-	}, [formData.appointmentTime]);
 
 	return (
 		<Dialog

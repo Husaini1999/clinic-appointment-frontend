@@ -16,6 +16,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import PersonIcon from '@mui/icons-material/Person';
 import config from '../config';
+import AppointmentSlotPicker from './AppointmentSlotPicker';
 import { format, set, addDays, isBefore } from 'date-fns';
 import InfoIcon from '@mui/icons-material/Info';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -598,187 +599,16 @@ const Chatbot = () => {
 				);
 			case 'dateTimeSelection':
 				return (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-						{!response.data?.appointmentTime && (
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-								<Typography variant="subtitle1" sx={{ mb: 1 }}>
-									Select a preferred date:
-								</Typography>
-								<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-									{getPaginatedDates(response.data?.currentPage || 0).map(
-										(date) => (
-											<Button
-												key={date.toISOString()}
-												variant="outlined"
-												onClick={() => onAction('updateDateTime', { date })}
-												sx={{
-													flex: '1 1 calc(33.33% - 8px)',
-													minWidth: '150px',
-													p: 2,
-													display: 'flex',
-													flexDirection: 'column',
-													alignItems: 'center',
-													gap: 0.5,
-													borderColor: 'primary.main',
-													'&:hover': {
-														borderColor: 'primary.dark',
-														backgroundColor: 'primary.light',
-													},
-												}}
-											>
-												<Typography variant="subtitle2">
-													{format(date, 'EEEE')}
-												</Typography>
-												<Typography variant="body2">
-													{format(date, 'MMM d, yyyy')}
-												</Typography>
-											</Button>
-										)
-									)}
-								</Box>
-
-								{/* Pagination Controls */}
-								<Box
-									sx={{
-										display: 'flex',
-										justifyContent: 'space-between',
-										mt: 2,
-										px: 1,
-									}}
-								>
-									<Button
-										onClick={() =>
-											onAction('changeDatePage', { direction: 'prev' })
-										}
-										disabled={!response.data?.currentPage}
-										startIcon={<ArrowBackIcon />}
-										sx={{ minWidth: '100px' }}
-									>
-										Previous
-									</Button>
-									<Typography variant="body2" sx={{ alignSelf: 'center' }}>
-										Page {(response.data?.currentPage || 0) + 1}
-									</Typography>
-									<Button
-										onClick={() =>
-											onAction('changeDatePage', { direction: 'next' })
-										}
-										disabled={(response.data?.currentPage || 0) >= 4} // Limit to 30 days (5 pages of 6 dates)
-										endIcon={<ArrowForwardIcon />}
-										sx={{ minWidth: '100px' }}
-									>
-										Next
-									</Button>
-								</Box>
-							</Box>
-						)}
-
-						{/* Time Slot Selection */}
-						{response.data?.appointmentTime && (
-							<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-								<Typography variant="subtitle1" sx={{ mb: 1 }}>
-									Available time slots for{' '}
-									{format(
-										new Date(response.data.appointmentTime),
-										'EEEE, MMMM d'
-									)}
-								</Typography>
-								<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-									{getTimeSlots().map((slot) => {
-										const bookedSlots = Array.isArray(
-											response.data?.bookedSlots
-										)
-											? response.data.bookedSlots
-											: [];
-										const isBooked = bookedSlots.includes(slot);
-
-										// Create a new date object from the ISO string
-										const appointmentDate = new Date(
-											response.data.appointmentTime
-										);
-										const { hours, minutes } = parseTimeSlot(slot);
-
-										const slotDateTime = set(appointmentDate, {
-											hours,
-											minutes,
-											seconds: 0,
-											milliseconds: 0,
-										});
-
-										const isValid = isValidAppointmentTime(slotDateTime);
-										const isSelected = response.data?.selectedTime === slot;
-
-										return (
-											<Button
-												key={slot}
-												variant={isSelected ? 'contained' : 'outlined'}
-												onClick={() => onAction('selectTimeSlot', slot)}
-												disabled={isBooked || !isValid}
-												sx={{
-													flex: '1 1 calc(25% - 8px)',
-													minWidth: '100px',
-													width: '90px',
-													height: '60px',
-													p: 1,
-													...(isSelected && {
-														bgcolor: 'primary.main',
-														color: 'primary.contrastText',
-														'&:hover': {
-															bgcolor: 'primary.dark',
-														},
-													}),
-													...(isBooked && {
-														bgcolor: 'grey.300',
-														color: 'grey.500',
-														borderColor: 'grey.400',
-														cursor: 'not-allowed',
-														'&:hover': {
-															bgcolor: 'grey.300',
-															borderColor: 'grey.400',
-														},
-														'&.Mui-disabled': {
-															bgcolor: 'grey.300',
-															color: 'grey.500',
-														},
-													}),
-												}}
-											>
-												<Box
-													sx={{
-														display: 'flex',
-														flexDirection: 'column',
-														alignItems: 'center',
-														width: '100%',
-														height: '100%',
-														justifyContent: 'center',
-													}}
-												>
-													{slot}
-													{isBooked && (
-														<Typography
-															variant="caption"
-															display="block"
-															color="error"
-															sx={{ mt: 0.5 }}
-														>
-															Booked
-														</Typography>
-													)}
-												</Box>
-											</Button>
-										);
-									})}
-								</Box>
-								<Button
-									variant="outlined"
-									onClick={() => onAction('updateDateTime', { date: null })}
-									sx={{ alignSelf: 'flex-start', mt: 1 }}
-								>
-									← Choose Different Date
-								</Button>
-							</Box>
-						)}
-					</Box>
+					<AppointmentSlotPicker
+						value={null}
+						onChange={(dateTime) => {
+							if (!dateTime) return;
+							onAction('selectTimeSlot', {
+								slot: format(dateTime, 'h:mm a'),
+								dateTime: dateTime.toISOString(),
+							});
+						}}
+					/>
 				);
 			case 'doctorPreferenceSelection':
 				return (
@@ -1028,7 +858,7 @@ const Chatbot = () => {
 					...prev,
 					{ text: data.name, sender: 'user' },
 					{
-						text: 'Please select your preferred appointment date:',
+						text: 'Please choose a date and a 30-minute time slot:',
 						sender: 'ai',
 						type: 'dateTimeSelection',
 						data: {
@@ -1049,7 +879,7 @@ const Chatbot = () => {
 						// Keep all responses except the last dateTimeSelection
 						...prev.filter((response) => response.type !== 'dateTimeSelection'),
 						{
-							text: 'Please select a new date for your appointment:',
+							text: 'Please choose a new date and a 30-minute time slot:',
 							sender: 'ai',
 							type: 'dateTimeSelection',
 							data: {
@@ -1160,11 +990,22 @@ const Chatbot = () => {
 				break;
 
 			// BOOKING APPOINTMENT TIME SLOT
-			case 'selectTimeSlot':
-				const selectedTime = data;
+			case 'selectTimeSlot': {
+				const selectedTime = typeof data === 'string' ? data : data.slot;
+				const chosenDate = data?.dateTime
+					? new Date(data.dateTime)
+					: set(new Date(flowData.appointmentTime), {
+							hours: parseTimeSlot(selectedTime).hours,
+							minutes: parseTimeSlot(selectedTime).minutes,
+							seconds: 0,
+							milliseconds: 0,
+					  });
+				const chosenLabel = format(chosenDate, "MMMM d, yyyy 'at' h:mm a");
+
 				setFlowData((prev) => ({
 					...prev,
 					selectedTime,
+					appointmentTime: chosenDate.toISOString(),
 				}));
 
 				if (guidedFlow === 'BookAppointment') {
@@ -1173,7 +1014,7 @@ const Chatbot = () => {
 						if (!token) {
 							setResponses((prev) => [
 								...prev,
-								{ text: selectedTime, sender: 'user' },
+								{ text: chosenLabel, sender: 'user' },
 								{ text: 'Please tell me your full name:', sender: 'ai' },
 							]);
 							setCurrentInputType('name');
@@ -1204,12 +1045,13 @@ const Chatbot = () => {
 										height: userData.height,
 									},
 									selectedTime: selectedTime,
+									appointmentTime: chosenDate.toISOString(),
 								}));
 
 								setResponses((prev) => [
 									...prev,
 									{
-										text: selectedTime,
+										text: chosenLabel,
 										sender: 'user',
 									},
 									{
@@ -1236,33 +1078,22 @@ const Chatbot = () => {
 						console.error('Error:', error);
 						setResponses((prev) => [
 							...prev,
-							{ text: selectedTime, sender: 'user' },
+							{ text: chosenLabel, sender: 'user' },
 							{ text: 'Please tell me your full name:', sender: 'ai' },
 						]);
 						setCurrentInputType('name');
 					}
 				} else if (guidedFlow === 'RescheduleAppointment') {
-					// Calculate new date time for the rescheduled appointment
-					const selectedDate = new Date(flowData.appointmentTime);
-					const { hours, minutes } = parseTimeSlot(selectedTime);
-					const newDateTime = set(selectedDate, {
-						hours,
-						minutes,
-						seconds: 0,
-						milliseconds: 0,
-					});
-
-					// Update flowData with the new date time
 					setFlowData((prev) => ({
 						...prev,
 						selectedTime,
-						newDateTime: newDateTime.toISOString(),
+						appointmentTime: chosenDate.toISOString(),
+						newDateTime: chosenDate.toISOString(),
 					}));
 
-					// Ask for reschedule reason
 					setResponses((prev) => [
 						...prev,
-						{ text: selectedTime, sender: 'user' },
+						{ text: chosenLabel, sender: 'user' },
 						{
 							text: 'Please provide a reason for rescheduling (Required):',
 							sender: 'ai',
@@ -1271,6 +1102,7 @@ const Chatbot = () => {
 					setCurrentInputType('rescheduleNotes');
 				}
 				break;
+			}
 
 			case 'textInput':
 				const { field, value } = data;
@@ -1605,7 +1437,7 @@ const Chatbot = () => {
 					setResponses((prev) => [
 						...prev,
 						{
-							text: 'Please select a new date for your appointment:',
+							text: 'Please choose a new date and a 30-minute time slot:',
 							sender: 'ai',
 							type: 'dateTimeSelection',
 							data: {
@@ -2942,7 +2774,7 @@ const Chatbot = () => {
 						bgcolor: 'background.paper',
 						boxShadow: 3,
 						borderRadius: 2,
-						width: '400px',
+						width: { xs: 'calc(100vw - 24px)', sm: '440px' },
 						maxHeight: '80vh',
 						display: 'flex',
 						flexDirection: 'column',
