@@ -3,6 +3,7 @@
   publish = "build"
 
 [build.environment]
+  NODE_VERSION = "24"
   REACT_APP_API_URL = "https://clinic-appointment-backend-9wd1.onrender.com"
 
 [[redirects]]

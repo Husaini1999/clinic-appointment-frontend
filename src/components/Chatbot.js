@@ -2540,6 +2540,12 @@ const Chatbot = () => {
 
 					default:
 						console.warn('Unhandled input type:', currentInputType);
+						setResponses((prev) => [
+							...prev,
+							{ text: userInputText, sender: 'user' },
+							{ text: SUGGESTION_LIST, sender: 'ai' },
+						]);
+						setCurrentInputType(null);
 						break;
 				}
 			} else {
@@ -2665,7 +2671,11 @@ const Chatbot = () => {
 			}
 		} catch (error) {
 			console.error('Error in handleUserInput:', error);
-			setIsProcessing(false); // Reset on error
+			setResponses((prev) => [
+				...prev,
+				{ text: SUGGESTION_LIST, sender: 'ai' },
+			]);
+			setIsProcessing(false);
 		}
 
 		setIsProcessing(false); // Ensure it's always reset at the end
